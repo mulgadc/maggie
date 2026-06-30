@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
+import { useState } from "react";
 
 import type { Issue } from "@/api";
-import { PriorityBadge, StatusBadge } from "@/components/badges";
-import type { Sort, SortKey } from "@/lib/filter";
+import { PriorityBadge, StatusBadge, TypeBadge } from "@/components/badges";
+import type { GroupNode, Sort, SortKey } from "@/lib/filter";
 
 function fmtDate(ts?: string) {
   if (!ts) {
@@ -22,19 +23,57 @@ const COLS: { key: SortKey; label: string; className?: string }[] = [
   { key: "updated_at", label: "Updated", className: "w-24" },
 ];
 
+function Cells({ i, indent }: { i: Issue; indent?: boolean }) {
+  return (
+    <>
+      <td className="px-3 py-2">
+        <PriorityBadge priority={i.priority} />
+      </td>
+      <td
+        className={`truncate px-3 py-2 font-mono text-accent text-xs ${indent ? "pl-8" : ""}`}
+        title={i.id}
+      >
+        {i.id}
+      </td>
+      <td className="truncate px-3 py-2" title={i.title}>
+        {i.title}
+      </td>
+      <td className="px-3 py-2">
+        <StatusBadge status={i.status} />
+      </td>
+      <td className="truncate px-3 py-2">
+        <TypeBadge type={i.issue_type} />
+      </td>
+      <td className="truncate px-3 py-2 text-muted" title={i.assignee ?? ""}>
+        {i.assignee ?? "—"}
+      </td>
+      <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(i.updated_at)}</td>
+    </>
+  );
+}
+
 export function IssueTable({
   rows,
+  groups,
   sort,
   onSortChange,
   onSelect,
 }: {
   rows: Issue[];
+  groups?: GroupNode[];
   sort: Sort;
   onSortChange: (s: Sort) => void;
   onSelect: (id: string) => void;
 }) {
+  const [open, setOpen] = useState<Set<string>>(new Set());
   const toggleSort = (key: SortKey) =>
     onSortChange({ key, dir: sort.key === key && sort.dir === "asc" ? "desc" : "asc" });
+  const toggleEpic = (id: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   return (
     <div className="overflow-x-hidden rounded-lg border border-line">
@@ -65,33 +104,100 @@ export function IssueTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((i) => (
-            <tr
-              key={i.id}
-              onClick={() => onSelect(i.id)}
-              className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
-            >
-              <td className="px-3 py-2">
-                <PriorityBadge priority={i.priority} />
-              </td>
-              <td className="truncate px-3 py-2 font-mono text-accent text-xs" title={i.id}>
-                {i.id}
-              </td>
-              <td className="truncate px-3 py-2" title={i.title}>
-                {i.title}
-              </td>
-              <td className="px-3 py-2">
-                <StatusBadge status={i.status} />
-              </td>
-              <td className="truncate px-3 py-2 text-muted">{i.issue_type}</td>
-              <td className="truncate px-3 py-2 text-muted" title={i.assignee ?? ""}>
-                {i.assignee ?? "—"}
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(i.updated_at)}</td>
-            </tr>
-          ))}
+          {groups
+            ? groups.map((g) =>
+                g.kind === "loose" ? (
+                  <tr
+                    key={g.issue.id}
+                    onClick={() => onSelect(g.issue.id)}
+                    className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+                  >
+                    <Cells i={g.issue} />
+                  </tr>
+                ) : (
+                  <EpicGroup
+                    key={g.issue.id}
+                    epic={g.issue}
+                    kids={g.children}
+                    expanded={open.has(g.issue.id)}
+                    onToggle={() => toggleEpic(g.issue.id)}
+                    onSelect={onSelect}
+                  />
+                ),
+              )
+            : rows.map((i) => (
+                <tr
+                  key={i.id}
+                  onClick={() => onSelect(i.id)}
+                  className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+                >
+                  <Cells i={i} />
+                </tr>
+              ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function EpicGroup({
+  epic,
+  kids,
+  expanded,
+  onToggle,
+  onSelect,
+}: {
+  epic: Issue;
+  kids: Issue[];
+  expanded: boolean;
+  onToggle: () => void;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <>
+      <tr className="border-line border-b bg-accent/5 hover:bg-accent/10">
+        <td className="px-3 py-2">
+          <PriorityBadge priority={epic.priority} />
+        </td>
+        <td className="truncate px-3 py-2 font-mono text-accent text-xs" title={epic.id}>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex items-center gap-1 hover:text-text"
+            aria-label={expanded ? "collapse" : "expand"}
+          >
+            {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            {epic.id}
+          </button>
+        </td>
+        <td className="truncate px-3 py-2">
+          <button type="button" onClick={() => onSelect(epic.id)} className="hover:text-accent">
+            {epic.title}
+          </button>
+          <span className="ml-2 text-muted text-xs">({kids.length})</span>
+        </td>
+        <td className="px-3 py-2">
+          <StatusBadge status={epic.status} />
+        </td>
+        <td className="truncate px-3 py-2">
+          <TypeBadge type={epic.issue_type} />
+        </td>
+        <td className="truncate px-3 py-2 text-muted" title={epic.assignee ?? ""}>
+          {epic.assignee ?? "—"}
+        </td>
+        <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(epic.updated_at)}</td>
+      </tr>
+      {expanded
+        ? kids.map((c) => (
+            <tr
+              key={c.id}
+              onClick={() => onSelect(c.id)}
+              className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+            >
+              <Cells i={c} indent />
+            </tr>
+          ))
+        : null}
+    </>
   );
 }

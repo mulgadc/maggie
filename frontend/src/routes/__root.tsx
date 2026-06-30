@@ -19,6 +19,7 @@ export const Route = createRootRoute({
     asgn: typeof search.asgn === "string" ? search.asgn : undefined,
     sort: typeof search.sort === "string" ? (search.sort as TableSearch["sort"]) : undefined,
     dir: search.dir === "desc" ? "desc" : search.dir === "asc" ? "asc" : undefined,
+    grp: search.grp === true || search.grp === "true" ? true : undefined,
   }),
   component: RootLayout,
 });

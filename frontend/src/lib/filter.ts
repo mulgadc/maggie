@@ -107,6 +107,7 @@ export interface TableSearch {
   asgn?: string;
   sort?: SortKey;
   dir?: "asc" | "desc";
+  grp?: boolean; // group table rows by epic
 }
 
 export function paramsToFilters(s: TableSearch): Filters {
@@ -150,4 +151,43 @@ export function sortToParams(s: Sort): TableSearch {
 
 export function uniqueSorted(values: (string | undefined)[]): string[] {
   return [...new Set(values.filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b));
+}
+
+// rootId returns the top-level ancestor id by stripping the dotted child suffix
+// (beads name children hierarchically, e.g. mulga-siv-231.7.4 -> mulga-siv-231).
+export function rootId(id: string): string {
+  const dot = id.indexOf(".");
+  return dot === -1 ? id : id.slice(0, dot);
+}
+
+export type GroupNode =
+  | { kind: "epic"; issue: Issue; children: Issue[] }
+  | { kind: "loose"; issue: Issue };
+
+// buildGroups nests dotted children under their root bead, preserving the
+// incoming (already sorted/filtered) order for both parents and children.
+export function buildGroups(rows: Issue[]): GroupNode[] {
+  const byId = new Map(rows.map((i) => [i.id, i]));
+  const childrenOf = new Map<string, Issue[]>();
+  const children = new Set<string>();
+  for (const i of rows) {
+    const root = rootId(i.id);
+    if (root !== i.id && byId.has(root)) {
+      children.add(i.id);
+      const list = childrenOf.get(root) ?? [];
+      list.push(i);
+      childrenOf.set(root, list);
+    }
+  }
+  const nodes: GroupNode[] = [];
+  for (const i of rows) {
+    if (children.has(i.id)) {
+      continue;
+    }
+    const kids = childrenOf.get(i.id);
+    nodes.push(
+      kids?.length ? { kind: "epic", issue: i, children: kids } : { kind: "loose", issue: i },
+    );
+  }
+  return nodes;
 }

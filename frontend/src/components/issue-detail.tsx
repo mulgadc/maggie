@@ -82,6 +82,35 @@ function DepList({
   );
 }
 
+function byType(arr: DepRef[] | undefined, t: string): DepRef[] {
+  return (arr ?? []).filter((d) => (d.dependency_type ?? "blocks") === t);
+}
+
+// dedupe relates-to: it is symmetric so the same ref shows in both arrays.
+function dedupe(items: DepRef[]): DepRef[] {
+  const seen = new Set<string>();
+  return items.filter((d) => (seen.has(d.id) ? false : seen.add(d.id)));
+}
+
+// Relations carries the issue's links split by semantic dependency_type, so
+// parent/child (epic structure) is distinct from hard blocks and relates-to.
+function Relations({ issue, onSelect }: { issue: Issue; onSelect: (id: string) => void }) {
+  const deps = issue.dependencies;
+  const dents = issue.dependents;
+  const related = dedupe([...byType(deps, "relates-to"), ...byType(dents, "relates-to")]);
+  return (
+    <>
+      <DepList title="Parent" items={byType(deps, "parent-child")} onSelect={onSelect} />
+      <DepList title="Children" items={byType(dents, "parent-child")} onSelect={onSelect} />
+      <DepList title="Blocked by" items={byType(deps, "blocks")} onSelect={onSelect} />
+      <DepList title="Blocks" items={byType(dents, "blocks")} onSelect={onSelect} />
+      <DepList title="Related" items={related} onSelect={onSelect} />
+      <DepList title="Tracks" items={byType(deps, "tracks")} onSelect={onSelect} />
+      <DepList title="Tracked by" items={byType(dents, "tracks")} onSelect={onSelect} />
+    </>
+  );
+}
+
 export function IssueDetail({
   id,
   onSelect,
@@ -142,8 +171,7 @@ export function IssueDetail({
               <Section title="Close Reason" body={issue.close_reason} />
             ) : null}
 
-            <DepList title="Depends on" items={issue.dependencies} onSelect={onSelect} />
-            <DepList title="Blocks" items={issue.dependents} onSelect={onSelect} />
+            <Relations issue={issue} onSelect={onSelect} />
           </>
         ) : null}
       </div>

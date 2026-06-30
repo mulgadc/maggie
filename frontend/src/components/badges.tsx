@@ -42,7 +42,11 @@ export function PriorityBadge({ priority }: { priority: number }) {
 }
 
 export function TypeBadge({ type }: { type: string }) {
-  return <span className={`${PILL} bg-surface2 text-muted ring-line`}>{type}</span>;
+  const style =
+    type === "epic"
+      ? "bg-accent/15 text-accent ring-accent/30"
+      : "bg-surface2 text-muted ring-line";
+  return <span className={`${PILL} ${style}`}>{type}</span>;
 }
 
 export function StatusDot({ status }: { status: Status }) {
