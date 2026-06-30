@@ -54,7 +54,7 @@ function RootLayout() {
   const onGroupMode = (m: GroupMode) =>
     navigate({ to: ".", search: (s) => ({ ...s, group: m === "none" ? undefined : m }) });
 
-  const showFilters = pathname !== "/graph" && pathname !== "/";
+  const showFilters = pathname !== "/";
   const isTable = pathname === "/table";
 
   return (

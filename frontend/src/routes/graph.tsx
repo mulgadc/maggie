@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Issue, Status } from "@/api";
 import { labelHue } from "@/components/badges";
+import { applyFilters, paramsToFilters } from "@/lib/filter";
 import { useGraph, useIssues } from "@/queries";
 
 const STATUS_VAR: Record<Status, string> = {
@@ -45,31 +46,37 @@ export const Route = createFileRoute("/graph")({
 
 function Graph() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { data: issues, isLoading: li } = useIssues();
   const { data: edges, isLoading: le, error } = useGraph();
 
-  const hasLabels = useMemo(
-    () => (issues ?? []).some((i) => (i.labels ?? []).length > 0),
-    [issues],
-  );
+  // Apply the shared filter bar so the graph honours the same status/label/etc
+  // filters as the table and board.
+  const filters = paramsToFilters(search);
+  const filtered = useMemo(() => applyFilters(issues ?? [], filters), [issues, filters]);
+
+  const hasLabels = useMemo(() => filtered.some((i) => (i.labels ?? []).length > 0), [filtered]);
   const [pref, setPref] = useState<boolean | null>(null);
   const clustered = pref === null ? hasLabels : pref;
 
   // Default graph shows only beads that carry an edge. Cluster mode instead
   // shows every labelled bead grouped into its label's bubble, so beads that
-  // share a feature clump together even without a direct dependency.
+  // share a feature clump together even without a direct dependency. Both modes
+  // are restricted to beads that pass the active filters.
   const { nodes, links } = useMemo(() => {
-    const byId = new Map<string, Issue>((issues ?? []).map((i) => [i.id, i]));
+    const byId = new Map<string, Issue>(filtered.map((i) => [i.id, i]));
     let nodes: Node[];
     if (clustered) {
-      nodes = (issues ?? [])
+      nodes = filtered
         .filter((i) => (i.labels ?? []).length > 0)
         .map((i) => ({ id: i.id, title: i.title, status: i.status, label: i.labels?.[0] }));
     } else {
       const ids = new Set<string>();
       for (const e of edges ?? []) {
-        ids.add(e.from);
-        ids.add(e.to);
+        if (byId.has(e.from) && byId.has(e.to)) {
+          ids.add(e.from);
+          ids.add(e.to);
+        }
       }
       nodes = [...ids].map((id) => {
         const i = byId.get(id);
@@ -81,7 +88,7 @@ function Graph() {
       .filter((e) => present.has(e.from) && present.has(e.to))
       .map((e) => ({ key: `${e.from}->${e.to}`, source: e.from, target: e.to, dashed: e.dashed }));
     return { nodes, links };
-  }, [issues, edges, clustered]);
+  }, [filtered, edges, clustered]);
 
   if (li || le) {
     return <p className="text-muted">loading…</p>;
@@ -248,7 +255,7 @@ function ForceGraph({
     : [];
 
   return (
-    <div className="relative h-[calc(100vh-9rem)] w-full overflow-hidden rounded-lg border border-line bg-panel">
+    <div className="relative h-full min-h-[500px] w-full overflow-hidden rounded-lg border border-line bg-panel">
       <svg ref={svgRef} className="h-full w-full">
         <defs>
           <marker
