@@ -102,7 +102,7 @@ func parseList(r *http.Request) beads.ListOpts {
 	if p := q.Get("priority"); priorityRe.MatchString(p) {
 		o.Priority = p
 	}
-	if n, err := strconv.Atoi(q.Get("limit")); err == nil && n > 0 && n <= 1000 {
+	if n, err := strconv.Atoi(q.Get("limit")); err == nil && n > 0 && n <= 100000 {
 		o.Limit = n
 	}
 	return o

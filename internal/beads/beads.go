@@ -68,8 +68,14 @@ func (c *Client) List(ctx context.Context, o ListOpts) ([]byte, error) {
 	if o.Priority != "" {
 		args = append(args, "--priority", o.Priority)
 	}
-	if o.Limit > 0 {
-		args = append(args, "--limit", fmt.Sprintf("%d", o.Limit))
+	limit := o.Limit
+	// bd caps list output at 50 unless --limit is passed, so --all alone still
+	// truncates. Force a high limit when none is supplied to return everything.
+	if limit == 0 && o.All {
+		limit = 100000
+	}
+	if limit > 0 {
+		args = append(args, "--limit", fmt.Sprintf("%d", limit))
 	}
 	return c.run(ctx, args...)
 }

@@ -56,7 +56,7 @@ async function getJSON<T>(path: string): Promise<T> {
 }
 
 export function fetchIssues(): Promise<Issue[]> {
-  return getJSON<Issue[]>("/api/issues?all=true&limit=2000");
+  return getJSON<Issue[]>("/api/issues?all=true&limit=100000");
 }
 
 export function fetchReady(): Promise<Issue[]> {
