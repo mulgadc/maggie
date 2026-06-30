@@ -8,7 +8,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   build: {
     target: "es2023",
-    outDir: "../cmd/waratah/web",
+    outDir: "../cmd/maggie/web",
     emptyOutDir: true,
   },
   plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],

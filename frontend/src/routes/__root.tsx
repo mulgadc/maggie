@@ -46,14 +46,17 @@ function RootLayout() {
   return (
     <div className="flex h-full flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-4 border-line border-b bg-bg px-5 py-3">
-        <h1 className="font-semibold text-accent tracking-wide">⚘ WARATAH</h1>
-        <nav className="flex gap-2">
+        <h1 className="flex items-center gap-3 font-semibold text-accent text-xl tracking-wide">
+          <img src="/maggie.png" alt="maggie" className="h-16 w-auto rounded-lg object-contain" />
+          maggie
+        </h1>
+        <nav className="-mb-3 ml-auto flex items-stretch gap-1 self-stretch">
           {TABS.map((t) => (
             <Link
               key={t.to}
               to={t.to}
               search={(s: RootSearch) => s}
-              className="rounded-md border border-line px-3 py-1.5 text-muted text-sm hover:text-text [&.active]:border-accent [&.active]:bg-accent [&.active]:text-bg"
+              className="flex items-center border-transparent border-b-2 px-4 font-medium text-muted text-sm transition-colors hover:text-text [&.active]:border-accent [&.active]:text-accent"
               activeOptions={{ exact: t.to === "/" }}
             >
               {t.label}

@@ -1,3 +1,3 @@
-module github.com/mulgadc/waratah
+module github.com/mulgadc/maggie
 
 go 1.26

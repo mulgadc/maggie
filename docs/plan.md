@@ -1,10 +1,10 @@
-# Waratah — Beads Web UI
+# Maggie — Beads Web UI
 
 **Status: In progress**
 
 ## Summary
 
-Waratah is a lightweight web UI for viewing and managing Beads issues backed by
+Maggie is a lightweight web UI for viewing and managing Beads issues backed by
 a centralised Dolt server (running on banksia). It gives the team a live, shared
 view of bead state without forcing everyone onto the CLI, while keeping the CLI
 as the authoritative write path.
@@ -54,16 +54,16 @@ limit, id). No shell interpolation — args are passed as an exec argv slice.
 
 ## Files
 
-- `cmd/waratah/main.go` — HTTP server, routing, static embed.
+- `cmd/maggie/main.go` — HTTP server, routing, static embed.
 - `internal/beads/` — `bd` exec wrapper and typed helpers.
-- `cmd/waratah/web/` — frontend (vanilla SPA for MVP; can grow to React off
+- `cmd/maggie/web/` — frontend (vanilla SPA for MVP; can grow to React off
   spinifex-ui). Lives under the main package so it can be `go:embed`-ed.
 - `docs/plan.md` — this doc.
 
 ## Snapshot server eval (banksia)
 
 The team is pinned to bd 0.50.0 with a `no-db: true` (git/JSONL) workflow and no
-database at all. To evaluate a centralised Dolt server + Waratah without
+database at all. To evaluate a centralised Dolt server + Maggie without
 disrupting anyone, we seed a throwaway server from a one-off snapshot of
 `issues.jsonl` — not a mirror, not a cutover. Git/JSONL stays the source of
 truth; the team is untouched. A full cutover (everyone on server mode, JSONL
@@ -76,17 +76,17 @@ retired, likely a bd bump to a stable release) is a separate future project.
 ./scripts/beads-server-banksia.sh serve                         # dolt sql-server
 ```
 
-Then point a client and Waratah at it:
+Then point a client and Maggie at it:
 
 ```bash
 bd init --backend dolt --server --server-host <banksia> --server-port 3307
 bd dolt set database beads
 bd dolt test
-WARATAH_BEADS_DIR=<client-dir> ./waratah
+MAGGIE_BEADS_DIR=<client-dir> ./maggie
 ```
 
 End-to-end proven locally: snapshot of 1507 issues -> Dolt -> sql-server ->
-bd server-mode client -> Waratah serving 1506 live issues.
+bd server-mode client -> Maggie serving 1506 live issues.
 
 ### Gotchas (cost us real time)
 

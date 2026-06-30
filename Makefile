@@ -4,16 +4,16 @@
 ui:
 	cd frontend && pnpm install && pnpm build
 
-# Build the Go binary (embeds whatever is in cmd/waratah/web).
+# Build the Go binary (embeds whatever is in cmd/maggie/web).
 build:
-	go build -o waratah ./cmd/waratah
+	go build -o maggie ./cmd/maggie
 
 # Build everything from clean.
 all: ui build
 
 # Run the server against a beads working dir (default: mulga).
 run: build
-	WARATAH_BEADS_DIR=$${WARATAH_BEADS_DIR:-$$HOME/Development/mulga} ./waratah
+	MAGGIE_BEADS_DIR=$${MAGGIE_BEADS_DIR:-$$HOME/Development/mulga} ./maggie
 
 # Frontend dev server with API proxy to a running Go backend on :8088.
 dev:

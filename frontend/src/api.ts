@@ -32,6 +32,12 @@ export interface Issue {
   dependents?: DepRef[];
 }
 
+export interface Edge {
+  from: string;
+  to: string;
+  dashed: boolean;
+}
+
 async function getJSON<T>(path: string): Promise<T> {
   const res = await fetch(path);
   if (!res.ok) {
@@ -46,6 +52,10 @@ export function fetchIssues(): Promise<Issue[]> {
 
 export function fetchReady(): Promise<Issue[]> {
   return getJSON<Issue[]>("/api/ready");
+}
+
+export function fetchGraph(): Promise<Edge[]> {
+  return getJSON<Edge[]>("/api/graph");
 }
 
 export async function fetchIssue(id: string): Promise<Issue | undefined> {

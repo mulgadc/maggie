@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Seed a throwaway Dolt beads server from a snapshot of issues.jsonl, then run
-# dolt sql-server. For evaluating the centralised server + waratah only — this
+# dolt sql-server. For evaluating the centralised server + maggie only — this
 # is a one-off snapshot, NOT a mirror. The team's git/JSONL workflow is the
 # source of truth and is untouched.
 #

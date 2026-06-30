@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { fetchIssue, fetchIssues, fetchReady } from "@/api";
+import { fetchGraph, fetchIssue, fetchIssues, fetchReady } from "@/api";
 
 const REFETCH_MS = 10_000;
 
@@ -16,6 +16,14 @@ export function useReady() {
   return useQuery({
     queryKey: ["ready"],
     queryFn: fetchReady,
+    refetchInterval: REFETCH_MS,
+  });
+}
+
+export function useGraph() {
+  return useQuery({
+    queryKey: ["graph"],
+    queryFn: fetchGraph,
     refetchInterval: REFETCH_MS,
   });
 }

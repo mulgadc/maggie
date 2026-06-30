@@ -1,4 +1,4 @@
-# Waratah
+# Maggie
 
 Lightweight web UI for viewing and managing [Beads](https://github.com/steveyegge/beads)
 issues. Part of the Mulga stack.
@@ -16,11 +16,11 @@ Reads come from the `bd` CLI (`bd ... --json`); writes (later) also go through
 
 ```bash
 make all     # build frontend -> embed -> build Go binary
-make run     # build + serve (default WARATAH_BEADS_DIR=$HOME/Development/mulga)
+make run     # build + serve (default MAGGIE_BEADS_DIR=$HOME/Development/mulga)
 # open http://localhost:8088
 ```
 
-The Go binary embeds `cmd/waratah/web` (the Vite build output). `make build`
+The Go binary embeds `cmd/maggie/web` (the Vite build output). `make build`
 alone works only after `make ui` has produced that output at least once.
 
 ## Frontend dev (hot reload)
@@ -34,9 +34,9 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 | Var                 | Default | Description                          |
 |---------------------|---------|--------------------------------------|
-| `WARATAH_ADDR`      | `:8088` | Listen address                       |
-| `WARATAH_BEADS_DIR` | `.`     | Working dir containing `.beads/`     |
-| `WARATAH_BD_BIN`    | `bd`    | Path to the `bd` binary              |
+| `MAGGIE_ADDR`      | `:8088` | Listen address                       |
+| `MAGGIE_BEADS_DIR` | `.`     | Working dir containing `.beads/`     |
+| `MAGGIE_BD_BIN`    | `bd`    | Path to the `bd` binary              |
 
 ## Endpoints
 

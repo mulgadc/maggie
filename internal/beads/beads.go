@@ -1,4 +1,4 @@
-// Package beads wraps the `bd` CLI as the data source for Waratah.
+// Package beads wraps the `bd` CLI as the data source for Maggie.
 //
 // Reads shell out to `bd ... --json`; the raw JSON is forwarded to clients.
 // Writes (later phases) also go through `bd` so bead invariants stay intact.
@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -82,8 +84,33 @@ func (c *Client) Show(ctx context.Context, id string) ([]byte, error) {
 	return c.run(ctx, "show", "--id", id, "--json")
 }
 
-// GraphHTML returns the self-contained interactive dependency graph for all
-// open issues as standalone HTML.
-func (c *Client) GraphHTML(ctx context.Context) ([]byte, error) {
-	return c.run(ctx, "graph", "--all", "--html")
+// Edge is a single directed dependency between two issues. Dashed edges are
+// parent/child (subtask) links; solid edges are hard dependencies.
+type Edge struct {
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Dashed bool   `json:"dashed"`
+}
+
+// dot "a" -> "b" [attrs] edge line; attrs captured to detect dashed style.
+var dotEdgeRe = regexp.MustCompile(`"([^"]+)"\s*->\s*"([^"]+)"\s*\[([^\]]*)\]`)
+
+// GraphEdges returns the dependency edges across all open issues. It parses
+// `bd graph --all --dot`, whose HTML form emits one document per connected
+// component and is unusable in a single view; the DOT form carries every edge.
+func (c *Client) GraphEdges(ctx context.Context) ([]Edge, error) {
+	out, err := c.run(ctx, "graph", "--all", "--dot")
+	if err != nil {
+		return nil, err
+	}
+	matches := dotEdgeRe.FindAllStringSubmatch(string(out), -1)
+	edges := make([]Edge, 0, len(matches))
+	for _, m := range matches {
+		edges = append(edges, Edge{
+			From:   m[1],
+			To:     m[2],
+			Dashed: strings.Contains(m[3], "dashed"),
+		})
+	}
+	return edges, nil
 }

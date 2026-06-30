@@ -1,28 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  /* Cool slate dark — no brown. */
-  --color-bg: #0d1017;
-  --color-panel: #161b24;
-  --color-surface2: #202733;
-  --color-line: #2a313d;
-  --color-text: #e7ebf2;
-  --color-muted: #8a93a4;
-  --color-accent: #6ea8fe;
+  /* Magpie — near-black plumage base, iridescent blue-green wing accent,
+     white highlights, blue/teal bead tones. Mostly dark. */
+  --color-bg: #080a0e;
+  --color-panel: #0f131a;
+  --color-surface2: #171d27;
+  --color-line: #232c3a;
+  --color-text: #eef2f7;
+  --color-muted: #828ea0;
+  --color-accent: #2dd4bf;
 
-  /* Status */
-  --color-st-open: #58a6ff;
-  --color-st-in_progress: #e3b341;
-  --color-st-blocked: #f85149;
-  --color-st-deferred: #bc8cff;
-  --color-st-closed: #6e7681;
+  /* Status — bead palette (teal/blue/silver) */
+  --color-st-open: #38bdf8;
+  --color-st-in_progress: #f0b429;
+  --color-st-blocked: #f0556b;
+  --color-st-deferred: #a78bfa;
+  --color-st-closed: #5b6675;
 
   /* Priority P0..P4 */
-  --color-pr-0: #f85149;
+  --color-pr-0: #f0556b;
   --color-pr-1: #ff9f43;
-  --color-pr-2: #e3b341;
-  --color-pr-3: #58a6ff;
-  --color-pr-4: #6e7681;
+  --color-pr-2: #f0b429;
+  --color-pr-3: #38bdf8;
+  --color-pr-4: #5b6675;
 
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;

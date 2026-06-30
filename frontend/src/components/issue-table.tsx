@@ -13,13 +13,13 @@ function fmtDate(ts?: string) {
 }
 
 const COLS: { key: SortKey; label: string; className?: string }[] = [
-  { key: "priority", label: "Pri" },
-  { key: "id", label: "ID" },
-  { key: "title", label: "Title", className: "w-full" },
-  { key: "status", label: "Status" },
-  { key: "issue_type", label: "Type" },
-  { key: "assignee", label: "Assignee" },
-  { key: "updated_at", label: "Updated" },
+  { key: "priority", label: "Pri", className: "w-14" },
+  { key: "id", label: "ID", className: "w-36" },
+  { key: "title", label: "Title" },
+  { key: "status", label: "Status", className: "w-28" },
+  { key: "issue_type", label: "Type", className: "w-24" },
+  { key: "assignee", label: "Assignee", className: "w-36" },
+  { key: "updated_at", label: "Updated", className: "w-24" },
 ];
 
 export function IssueTable({
@@ -37,8 +37,8 @@ export function IssueTable({
     onSortChange({ key, dir: sort.key === key && sort.dir === "asc" ? "desc" : "asc" });
 
   return (
-    <div className="overflow-auto rounded-lg border border-line">
-      <table className="w-full border-collapse text-sm">
+    <div className="overflow-x-hidden rounded-lg border border-line">
+      <table className="w-full table-fixed border-collapse text-sm">
         <thead className="sticky top-0 bg-panel">
           <tr>
             {COLS.map((c) => (
@@ -74,13 +74,19 @@ export function IssueTable({
               <td className="px-3 py-2">
                 <PriorityBadge priority={i.priority} />
               </td>
-              <td className="whitespace-nowrap px-3 py-2 font-mono text-accent text-xs">{i.id}</td>
-              <td className="max-w-md truncate px-3 py-2">{i.title}</td>
+              <td className="truncate px-3 py-2 font-mono text-accent text-xs" title={i.id}>
+                {i.id}
+              </td>
+              <td className="truncate px-3 py-2" title={i.title}>
+                {i.title}
+              </td>
               <td className="px-3 py-2">
                 <StatusBadge status={i.status} />
               </td>
-              <td className="whitespace-nowrap px-3 py-2 text-muted">{i.issue_type}</td>
-              <td className="whitespace-nowrap px-3 py-2 text-muted">{i.assignee ?? "—"}</td>
+              <td className="truncate px-3 py-2 text-muted">{i.issue_type}</td>
+              <td className="truncate px-3 py-2 text-muted" title={i.assignee ?? ""}>
+                {i.assignee ?? "—"}
+              </td>
               <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(i.updated_at)}</td>
             </tr>
           ))}

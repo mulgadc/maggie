@@ -67,16 +67,14 @@ export function FilterBar({
     <div className="flex flex-col gap-2 border-line border-b bg-bg px-5 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className={FIELD}
-          placeholder="search id or title…"
-          value={filters.text}
-          onChange={(e) => set({ text: e.target.value })}
-        />
-        <input
-          className={`${FIELD} font-mono`}
-          placeholder="id glob e.g. mulga-siv-*"
-          value={filters.idGlob}
-          onChange={(e) => set({ idGlob: e.target.value })}
+          className={`${FIELD} w-64`}
+          placeholder="search… (use * for id glob, e.g. mulga-siv-*)"
+          value={filters.idGlob || filters.text}
+          onChange={(e) => {
+            const v = e.target.value;
+            // `*` switches the box into id-glob mode; otherwise free substring.
+            set(v.includes("*") ? { idGlob: v, text: "" } : { text: v, idGlob: "" });
+          }}
         />
         <select
           className={FIELD}

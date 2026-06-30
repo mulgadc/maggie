@@ -1,9 +1,9 @@
-// Command waratah serves a read-only web UI over the Beads `bd` CLI.
+// Command maggie serves a read-only web UI over the Beads `bd` CLI.
 package main
 
 import (
-	"bytes"
 	"embed"
+	"encoding/json"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mulgadc/waratah/internal/beads"
+	"github.com/mulgadc/maggie/internal/beads"
 )
 
 //go:embed web
@@ -27,9 +27,9 @@ var (
 )
 
 func main() {
-	addr := envOr("WARATAH_ADDR", ":8088")
-	dir := envOr("WARATAH_BEADS_DIR", ".")
-	bin := envOr("WARATAH_BD_BIN", "bd")
+	addr := envOr("MAGGIE_ADDR", ":8088")
+	dir := envOr("MAGGIE_BEADS_DIR", ".")
+	bin := envOr("MAGGIE_BD_BIN", "bd")
 
 	bd := beads.New(bin, dir, 15*time.Second)
 
@@ -55,22 +55,19 @@ func main() {
 		return bd.Show(r.Context(), id)
 	}))
 	mux.HandleFunc("/api/graph", func(w http.ResponseWriter, r *http.Request) {
-		out, err := bd.GraphHTML(r.Context())
+		edges, err := bd.GraphEdges(r.Context())
 		if err != nil {
 			slog.Error("graph", "err", err)
 			http.Error(w, "graph failed", http.StatusBadGateway)
 			return
 		}
-		// bd loads D3 from an external CDN; rewrite to the locally vendored
-		// copy so the graph renders on offline/firewalled hosts.
-		out = bytes.ReplaceAll(out,
-			[]byte("https://d3js.org/d3.v7.min.js"),
-			[]byte("/vendor/d3.v7.min.js"))
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write(out)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(edges); err != nil {
+			slog.Error("graph encode", "err", err)
+		}
 	})
 
-	slog.Info("waratah listening", "addr", addr, "beads_dir", dir)
+	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
 	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("serve", "err", err)
