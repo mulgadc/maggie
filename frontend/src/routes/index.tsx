@@ -1,11 +1,22 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Activity, AlertTriangle, Clock, Flame, Tags, Target } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  ChevronRight,
+  Clock,
+  Flame,
+  GitMerge,
+  ListOrdered,
+  Tags,
+  Target,
+} from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import type { Issue, Status } from "@/api";
 import { LabelChip, PriorityBadge, StatusBadge, StatusDot } from "@/components/badges";
 import { allPrefixes, idPrefix, uniqueSorted } from "@/lib/filter";
-import { useIssues, useReady } from "@/queries";
+import { prereqIds, suggestSequence } from "@/lib/sequence";
+import { useGraph, useIssues, useReady } from "@/queries";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -41,10 +52,15 @@ function Dashboard() {
   const navigate = useNavigate();
   const { data: issues, isLoading, error } = useIssues();
   const { data: readyData } = useReady();
+  const { data: edgesData } = useGraph();
   const [focus, setFocus] = useFocus();
 
   const all = useMemo(() => issues ?? [], [issues]);
   const ready = useMemo(() => readyData ?? [], [readyData]);
+  const edges = useMemo(() => edgesData ?? [], [edgesData]);
+
+  const sequence = useMemo(() => suggestSequence(all, edges, 16), [all, edges]);
+  const prereqs = useMemo(() => prereqIds(sequence, edges), [sequence, edges]);
 
   const counts = useMemo(() => {
     const c: Record<Status, number> = {
@@ -148,6 +164,14 @@ function Dashboard() {
           />
         ))}
       </div>
+
+      <Panel title="Suggested sequence" icon={<ListOrdered size={15} />}>
+        {sequence.length ? (
+          <SequenceTimeline items={sequence} prereqs={prereqs} onSelect={open} />
+        ) : (
+          <Empty text="nothing actionable to sequence" />
+        )}
+      </Panel>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Panel title="Open by priority" icon={<Activity size={15} />}>
@@ -266,6 +290,58 @@ function Dashboard() {
           )}
         </Panel>
       </div>
+    </div>
+  );
+}
+
+function SequenceTimeline({
+  items,
+  prereqs,
+  onSelect,
+}: {
+  items: Issue[];
+  prereqs: Map<string, string[]>;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="-mx-1 flex items-stretch gap-1 overflow-x-auto px-1 pb-1">
+      {items.map((i, idx) => {
+        const deps = prereqs.get(i.id) ?? [];
+        return (
+          <div key={i.id} className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onSelect(i.id)}
+              className="flex h-full w-48 shrink-0 flex-col gap-1.5 rounded-lg border border-line bg-bg p-2.5 text-left transition-colors hover:border-accent"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 font-semibold text-accent text-xs tabular-nums">
+                  {idx + 1}
+                </span>
+                <PriorityBadge priority={i.priority} />
+                {deps.length ? (
+                  <span
+                    className="ml-auto inline-flex items-center gap-0.5 text-muted text-xs"
+                    title={`after ${deps.join(", ")}`}
+                  >
+                    <GitMerge size={11} />
+                    {deps.length}
+                  </span>
+                ) : null}
+              </div>
+              <span className="font-mono text-accent text-xs">{i.id}</span>
+              <span className="line-clamp-2 text-sm leading-snug">{i.title}</span>
+              <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
+                <StatusBadge status={i.status} />
+                {i.labels?.[0] ? <LabelChip label={i.labels[0]} /> : null}
+              </div>
+            </button>
+            {idx < items.length - 1 ? (
+              <ChevronRight size={16} className="shrink-0 text-muted" />
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
