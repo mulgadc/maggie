@@ -1,4 +1,4 @@
-.PHONY: ui build run dev fix preflight docker-build docker-seed docker-up docker-down docker-refresh
+.PHONY: ui build run dev fix preflight docker-build docker-prune docker-seed docker-up docker-down docker-refresh
 
 # Build the React frontend into the embedded web dir.
 ui:
@@ -30,9 +30,16 @@ preflight:
 
 # --- Docker (portable maggie + dolt stack) ---
 
-# Build the shared image.
+# Build the shared image, then reclaim space from the layers it replaced.
+# Force the legacy builder: the host's buildx is too old for this stack.
 docker-build:
-	docker compose build
+	DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
+	$(MAKE) docker-prune
+
+# Reclaim disk: drop dangling images and stale build cache left by rebuilds.
+docker-prune:
+	docker image prune -f
+	docker builder prune -f
 
 # Import snapshot/issues.jsonl into the dolt volume (dolt must be stopped).
 docker-seed:

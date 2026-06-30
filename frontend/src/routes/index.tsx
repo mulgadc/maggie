@@ -119,8 +119,17 @@ function Dashboard() {
       .map(([label, n]) => ({ label, n, pct: Math.round((n / max) * 100) }));
   }, [openIssues]);
 
-  const assignees = useMemo(() => uniqueSorted(all.map((i) => i.assignee)), [all]);
-  const prefixes = useMemo(() => allPrefixes(all), [all]);
+  // Selector lists only identities that have actionable (sequenceable) work, so
+  // people whose beads are all closed/deferred do not show an empty sequence.
+  const actionable = useMemo(
+    () =>
+      all.filter(
+        (i) => i.status === "open" || i.status === "in_progress" || i.status === "blocked",
+      ),
+    [all],
+  );
+  const assignees = useMemo(() => uniqueSorted(actionable.map((i) => i.assignee)), [actionable]);
+  const prefixes = useMemo(() => allPrefixes(actionable), [actionable]);
 
   const open = (id: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) });
   const toTable = (search: Record<string, unknown>) => navigate({ to: "/table", search });
