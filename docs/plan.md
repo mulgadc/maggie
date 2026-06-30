@@ -60,8 +60,50 @@ limit, id). No shell interpolation — args are passed as an exec argv slice.
   spinifex-ui). Lives under the main package so it can be `go:embed`-ed.
 - `docs/plan.md` — this doc.
 
+## Snapshot server eval (banksia)
+
+The team is pinned to bd 0.50.0 with a `no-db: true` (git/JSONL) workflow and no
+database at all. To evaluate a centralised Dolt server + Waratah without
+disrupting anyone, we seed a throwaway server from a one-off snapshot of
+`issues.jsonl` — not a mirror, not a cutover. Git/JSONL stays the source of
+truth; the team is untouched. A full cutover (everyone on server mode, JSONL
+retired, likely a bd bump to a stable release) is a separate future project.
+
+`scripts/beads-server-banksia.sh` automates this:
+
+```bash
+./scripts/beads-server-banksia.sh seed  /path/to/issues.jsonl   # one-time import
+./scripts/beads-server-banksia.sh serve                         # dolt sql-server
+```
+
+Then point a client and Waratah at it:
+
+```bash
+bd init --backend dolt --server --server-host <banksia> --server-port 3307
+bd dolt set database beads
+bd dolt test
+WARATAH_BEADS_DIR=<client-dir> ./waratah
+```
+
+End-to-end proven locally: snapshot of 1507 issues -> Dolt -> sql-server ->
+bd server-mode client -> Waratah serving 1506 live issues.
+
+### Gotchas (cost us real time)
+
+- **Install dolt from the release tarball, not `go install`** — dolt's go.mod has
+  replace directives that break `go install`.
+- **`bd migrate --to-dolt` is SQLite -> Dolt only.** From a `no-db` JSONL repo the
+  path is `bd init --backend dolt --from-jsonl`.
+- **Database-name mismatch:** `--from-jsonl` imports into a DB named `beads`, but
+  bd's read config defaults to `beads_<prefix>`. Import looks successful yet
+  `bd stats` shows 0. Fix: `bd dolt set database beads`.
+- **bd scopes reads by git repo id** — run inside a git repo or reads return 0.
+- **A server-mode client must be a separate dir** from the server's data-dir;
+  reconfiguring the served dir fails with "database is locked by another dolt
+  process".
+
 ## Testing
 
 - Unit: argv construction and param allowlisting in `internal/beads`.
 - Manual: run against the local mulga `.beads` dir, verify board/ready/graph load.
-- Later: integration against the banksia Dolt server in server mode.
+- Integration: against a Dolt server in server mode (proven via the snapshot eval).
