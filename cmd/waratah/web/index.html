@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Waratah — Beads</title>
+<style>
+  :root {
+    --bg: #16130f; --panel: #211c16; --line: #3a3128; --text: #ece4d6;
+    --muted: #9b8f7d; --amber: #ffb347; --accent: #ff5e5b;
+    --open: #6fb3ff; --prog: #ffb347; --blocked: #ff5e5b; --closed: #6e6256; --deferred: #b58cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); }
+  header h1 { font-size: 16px; margin: 0; color: var(--amber); letter-spacing: .5px; }
+  nav button { background: none; border: 1px solid var(--line); color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font: inherit; }
+  nav button.active { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+  #status { margin-left: auto; color: var(--muted); font: 12px/1 "JetBrains Mono", monospace; }
+  main { padding: 20px; }
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .col h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 0 0 8px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--muted); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; cursor: pointer; }
+  .card:hover { border-color: var(--amber); }
+  .card .id { font: 11px/1 "JetBrains Mono", monospace; color: var(--amber); }
+  .card .title { margin-top: 4px; }
+  .card .meta { margin-top: 6px; font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .s-open { border-left-color: var(--open); } .s-in_progress { border-left-color: var(--prog); }
+  .s-blocked { border-left-color: var(--blocked); } .s-closed { border-left-color: var(--closed); }
+  .s-deferred { border-left-color: var(--deferred); }
+  .pill { padding: 1px 6px; border-radius: 4px; background: var(--line); }
+  iframe { width: 100%; height: calc(100vh - 110px); border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  #detail { position: fixed; inset: 0 0 0 auto; width: min(560px, 100%); background: var(--panel); border-left: 1px solid var(--line); padding: 20px; overflow: auto; transform: translateX(100%); transition: transform .15s; }
+  #detail.open { transform: none; }
+  #detail pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
+  #detail .close { float: right; cursor: pointer; color: var(--muted); border: none; background: none; font-size: 18px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚘ WARATAH</h1>
+  <nav>
+    <button data-view="board" class="active">Board</button>
+    <button data-view="ready">Ready</button>
+    <button data-view="graph">Graph</button>
+  </nav>
+  <span id="status">…</span>
+</header>
+<main id="main"></main>
+<aside id="detail"><button class="close" onclick="closeDetail()">✕</button><div id="detail-body"></div></aside>
+
+<script>
+const STATUSES = ["open", "in_progress", "blocked", "deferred", "closed"];
+const main = document.getElementById("main");
+const status = document.getElementById("status");
+let view = "board";
+
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(path + " -> " + r.status);
+  return r.json();
+}
+
+function card(i) {
+  const d = document.createElement("div");
+  d.className = "card s-" + i.status;
+  d.onclick = () => openDetail(i.id);
+  d.innerHTML = `<div class="id">${i.id}</div>
+    <div class="title">${esc(i.title)}</div>
+    <div class="meta"><span class="pill">P${i.priority}</span>
+      <span class="pill">${i.issue_type}</span>
+      ${i.assignee ? `<span>${esc(i.assignee)}</span>` : ""}
+      ${i.dependency_count ? `<span>⛓ ${i.dependency_count}</span>` : ""}</div>`;
+  return d;
+}
+
+async function renderBoard() {
+  const items = await api("/api/issues?limit=1000&all=true");
+  status.textContent = items.length + " issues";
+  const cols = {};
+  main.innerHTML = `<div class="board"></div>`;
+  const board = main.firstChild;
+  for (const s of STATUSES) {
+    const col = document.createElement("div");
+    col.className = "col";
+    col.innerHTML = `<h2>${s.replace("_", " ")}</h2>`;
+    cols[s] = col; board.appendChild(col);
+  }
+  for (const i of items) (cols[i.status] || cols.open).appendChild(card(i));
+}
+
+async function renderReady() {
+  const items = await api("/api/ready");
+  status.textContent = items.length + " ready";
+  main.innerHTML = `<div class="board"><div class="col"></div></div>`;
+  const col = main.querySelector(".col");
+  items.forEach(i => col.appendChild(card(i)));
+}
+
+function renderGraph() {
+  status.textContent = "dependency graph";
+  main.innerHTML = `<iframe src="/api/graph"></iframe>`;
+}
+
+async function openDetail(id) {
+  const body = document.getElementById("detail-body");
+  body.innerHTML = "loading…";
+  document.getElementById("detail").classList.add("open");
+  try {
+    const arr = await api("/api/issue?id=" + encodeURIComponent(id));
+    const i = Array.isArray(arr) ? arr[0] : arr;
+    body.innerHTML = `<h2 style="color:var(--amber)">${i.id}</h2>
+      <h3>${esc(i.title)}</h3>
+      <div class="meta">${i.status} · P${i.priority} · ${i.issue_type}${i.assignee ? " · " + esc(i.assignee) : ""}</div>
+      <pre>${esc(i.description || "(no description)")}</pre>`;
+  } catch (e) { body.innerHTML = "error: " + e.message; }
+}
+function closeDetail() { document.getElementById("detail").classList.remove("open"); }
+
+function esc(s) { return String(s ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+function render() {
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  ({ board: renderBoard, ready: renderReady, graph: renderGraph }[view])().catch(e => { main.innerHTML = "<p>error: " + e.message + "</p>"; });
+}
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
+render();
+</script>
+</body>
+</html>
