@@ -1,13 +1,15 @@
-import { Layers, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useMemo } from "react";
 
 import type { Status } from "@/api";
 import { StatusDot } from "@/components/badges";
 import {
   ALL_STATUSES,
+  allLabels,
   applyFilters,
   EMPTY_FILTERS,
   type Filters,
+  type GroupMode,
   uniqueSorted,
 } from "@/lib/filter";
 import { useIssues } from "@/queries";
@@ -50,18 +52,19 @@ function StatusChips({
 export function FilterBar({
   filters,
   onChange,
-  grouped,
-  onToggleGroup,
+  groupMode,
+  onGroupMode,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
-  grouped?: boolean;
-  onToggleGroup?: () => void;
+  groupMode?: GroupMode;
+  onGroupMode?: (m: GroupMode) => void;
 }) {
   const { data: issues } = useIssues();
   const all = issues ?? [];
   const types = useMemo(() => uniqueSorted(all.map((i) => i.issue_type)), [all]);
   const assignees = useMemo(() => uniqueSorted(all.map((i) => i.assignee)), [all]);
+  const labels = useMemo(() => allLabels(all), [all]);
   const matched = useMemo(() => applyFilters(all, filters).length, [all, filters]);
 
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
@@ -118,6 +121,18 @@ export function FilterBar({
             </option>
           ))}
         </select>
+        <select
+          className={`${FIELD} max-w-48`}
+          value={filters.label}
+          onChange={(e) => set({ label: e.target.value })}
+        >
+          <option value="all">label: all</option>
+          {labels.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
         {dirty ? (
           <button
             type="button"
@@ -127,21 +142,18 @@ export function FilterBar({
             <X size={14} /> clear
           </button>
         ) : null}
-        {onToggleGroup ? (
-          <button
-            type="button"
-            onClick={onToggleGroup}
-            aria-pressed={grouped}
-            className={`ml-auto inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-sm ${
-              grouped
-                ? "border-accent bg-accent/15 text-accent"
-                : "border-line text-muted hover:text-text"
-            }`}
+        {onGroupMode ? (
+          <select
+            className={`${FIELD} ml-auto`}
+            value={groupMode ?? "none"}
+            onChange={(e) => onGroupMode(e.target.value as GroupMode)}
           >
-            <Layers size={14} /> group by epic
-          </button>
+            <option value="none">group: none</option>
+            <option value="epic">group: epic</option>
+            <option value="label">group: label</option>
+          </select>
         ) : null}
-        <span className={`text-muted text-sm ${onToggleGroup ? "" : "ml-auto"}`}>
+        <span className={`text-muted text-sm ${onGroupMode ? "" : "ml-auto"}`}>
           {matched} of {all.length}
         </span>
       </div>

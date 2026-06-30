@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 
 import type { Comment, DepRef, Issue } from "@/api";
-import { PriorityBadge, StatusBadge, StatusDot, TypeBadge } from "@/components/badges";
+import { LabelChip, PriorityBadge, StatusBadge, StatusDot, TypeBadge } from "@/components/badges";
 import { useIssue } from "@/queries";
 
 function fmt(ts?: string) {
@@ -181,6 +181,13 @@ export function IssueDetail({
               <PriorityBadge priority={issue.priority} />
               <TypeBadge type={issue.issue_type} />
             </div>
+            {issue.labels?.length ? (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {issue.labels.map((l) => (
+                  <LabelChip key={l} label={l} />
+                ))}
+              </div>
+            ) : null}
 
             <dl className="mt-4 grid grid-cols-2 gap-3">
               <Meta label="Assignee" value={issue.assignee} />

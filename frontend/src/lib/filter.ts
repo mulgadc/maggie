@@ -9,6 +9,7 @@ export interface Filters {
   priority: number | "all";
   type: string | "all";
   assignee: string | "all";
+  label: string | "all"; // issue must carry this label
 }
 
 export const EMPTY_FILTERS: Filters = {
@@ -18,7 +19,12 @@ export const EMPTY_FILTERS: Filters = {
   priority: "all",
   type: "all",
   assignee: "all",
+  label: "all",
 };
+
+// GroupMode controls how the table nests rows: by epic hierarchy, by label, or
+// flat.
+export type GroupMode = "none" | "epic" | "label";
 
 export type SortKey =
   | "id"
@@ -65,6 +71,9 @@ export function applyFilters(issues: Issue[], f: Filters): Issue[] {
     if (f.assignee !== "all" && (i.assignee ?? "") !== f.assignee) {
       return false;
     }
+    if (f.label !== "all" && !(i.labels ?? []).includes(f.label)) {
+      return false;
+    }
     return true;
   });
 }
@@ -105,9 +114,10 @@ export interface TableSearch {
   pri?: number;
   type?: string;
   asgn?: string;
+  lbl?: string; // filter to a single label
   sort?: SortKey;
   dir?: "asc" | "desc";
-  grp?: boolean; // group table rows by epic
+  group?: GroupMode; // group table rows by epic or label
 }
 
 export function paramsToFilters(s: TableSearch): Filters {
@@ -121,6 +131,7 @@ export function paramsToFilters(s: TableSearch): Filters {
     priority: s.pri ?? "all",
     type: s.type ?? "all",
     assignee: s.asgn ?? "all",
+    label: s.lbl ?? "all",
   };
 }
 
@@ -141,6 +152,7 @@ export function filtersToParams(f: Filters): TableSearch {
     pri: f.priority === "all" ? undefined : f.priority,
     type: f.type === "all" ? undefined : f.type,
     asgn: f.assignee === "all" ? undefined : f.assignee,
+    lbl: f.label === "all" ? undefined : f.label,
   };
 }
 
@@ -190,4 +202,40 @@ export function buildGroups(rows: Issue[]): GroupNode[] {
     );
   }
   return nodes;
+}
+
+export interface LabelGroup {
+  label: string; // "" denotes the unlabeled bucket
+  issues: Issue[];
+}
+
+// allLabels returns every distinct label across the issues, sorted.
+export function allLabels(issues: Issue[]): string[] {
+  return uniqueSorted(issues.flatMap((i) => i.labels ?? []));
+}
+
+// buildLabelGroups buckets issues by label (alphabetical), with the unlabeled
+// bucket last. An issue with several labels appears under each of them.
+export function buildLabelGroups(rows: Issue[]): LabelGroup[] {
+  const byLabel = new Map<string, Issue[]>();
+  const unlabeled: Issue[] = [];
+  for (const i of rows) {
+    const labels = i.labels ?? [];
+    if (!labels.length) {
+      unlabeled.push(i);
+      continue;
+    }
+    for (const l of labels) {
+      const list = byLabel.get(l) ?? [];
+      list.push(i);
+      byLabel.set(l, list);
+    }
+  }
+  const groups: LabelGroup[] = [...byLabel.keys()]
+    .sort((a, b) => a.localeCompare(b))
+    .map((label) => ({ label, issues: byLabel.get(label) ?? [] }));
+  if (unlabeled.length) {
+    groups.push({ label: "", issues: unlabeled });
+  }
+  return groups;
 }

@@ -2,7 +2,13 @@ import { createRootRoute, Link, Outlet, useLocation, useNavigate } from "@tansta
 
 import { FilterBar } from "@/components/filter-bar";
 import { IssueDetail } from "@/components/issue-detail";
-import { type Filters, filtersToParams, paramsToFilters, type TableSearch } from "@/lib/filter";
+import {
+  type Filters,
+  filtersToParams,
+  type GroupMode,
+  paramsToFilters,
+  type TableSearch,
+} from "@/lib/filter";
 
 interface RootSearch extends TableSearch {
   issue?: string;
@@ -17,9 +23,11 @@ export const Route = createRootRoute({
     pri: search.pri === undefined ? undefined : Number(search.pri),
     type: typeof search.type === "string" ? search.type : undefined,
     asgn: typeof search.asgn === "string" ? search.asgn : undefined,
+    lbl: typeof search.lbl === "string" ? search.lbl : undefined,
     sort: typeof search.sort === "string" ? (search.sort as TableSearch["sort"]) : undefined,
     dir: search.dir === "desc" ? "desc" : search.dir === "asc" ? "asc" : undefined,
-    grp: search.grp === true || search.grp === "true" ? true : undefined,
+    group:
+      search.group === "epic" || search.group === "label" ? (search.group as GroupMode) : undefined,
   }),
   component: RootLayout,
 });
@@ -41,9 +49,9 @@ function RootLayout() {
   const openIssue = (open: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: open }) });
   const onFilters = (f: Filters) =>
     navigate({ to: ".", search: (s) => ({ ...s, ...filtersToParams(f) }) });
-  const grouped = search.grp === true;
-  const onToggleGroup = () =>
-    navigate({ to: ".", search: (s) => ({ ...s, grp: grouped ? undefined : true }) });
+  const groupMode: GroupMode = search.group ?? "none";
+  const onGroupMode = (m: GroupMode) =>
+    navigate({ to: ".", search: (s) => ({ ...s, group: m === "none" ? undefined : m }) });
 
   const showFilters = pathname !== "/graph";
   const isTable = pathname === "/";
@@ -78,8 +86,8 @@ function RootLayout() {
         <FilterBar
           filters={filters}
           onChange={onFilters}
-          grouped={isTable ? grouped : undefined}
-          onToggleGroup={isTable ? onToggleGroup : undefined}
+          groupMode={isTable ? groupMode : undefined}
+          onGroupMode={isTable ? onGroupMode : undefined}
         />
       ) : null}
       <main className="flex-1 overflow-auto p-5">

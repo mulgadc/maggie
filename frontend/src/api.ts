@@ -36,6 +36,7 @@ export interface Issue {
   dependency_count?: number;
   dependent_count?: number;
   comment_count?: number;
+  labels?: string[];
   dependencies?: DepRef[];
   dependents?: DepRef[];
   comments?: Comment[];

@@ -49,6 +49,32 @@ export function TypeBadge({ type }: { type: string }) {
   return <span className={`${PILL} ${style}`}>{type}</span>;
 }
 
+// labelHue maps a label to a stable hue so each tag keeps one colour everywhere.
+function labelHue(label: string): number {
+  let h = 0;
+  for (let i = 0; i < label.length; i++) {
+    h = (h * 31 + label.charCodeAt(i)) % 360;
+  }
+  return h;
+}
+
+export function LabelChip({ label }: { label: string }) {
+  const h = labelHue(label);
+  return (
+    <span
+      className={`${PILL} ring-1 ring-inset`}
+      style={{
+        color: `hsl(${h} 70% 72%)`,
+        backgroundColor: `hsl(${h} 70% 72% / 0.12)`,
+        // biome-ignore lint: ring colour via inline style for the dynamic hue
+        ["--tw-ring-color" as string]: `hsl(${h} 70% 72% / 0.3)`,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
 export function StatusDot({ status }: { status: Status }) {
   return (
     <span
