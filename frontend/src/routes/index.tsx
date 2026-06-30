@@ -1,16 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import type { Issue, Status } from "@/api";
-import { IssueCard } from "@/components/issue-card";
+import { IssueTable } from "@/components/issue-table";
 import { useIssues } from "@/queries";
 
 export const Route = createFileRoute("/")({
-  component: Board,
+  component: Table,
 });
 
-const COLUMNS: Status[] = ["open", "in_progress", "blocked", "deferred", "closed"];
-
-function Board() {
+function Table() {
   const navigate = useNavigate();
   const { data, isLoading, error } = useIssues();
 
@@ -20,26 +17,8 @@ function Board() {
     return <p className="text-muted">loading…</p>;
   }
   if (error) {
-    return <p className="text-accent">error: {error.message}</p>;
+    return <p className="text-st-blocked">error: {error.message}</p>;
   }
 
-  const grouped = new Map<Status, Issue[]>(COLUMNS.map((s) => [s, []]));
-  for (const issue of data ?? []) {
-    grouped.get(issue.status)?.push(issue);
-  }
-
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3.5">
-      {COLUMNS.map((status) => (
-        <section key={status}>
-          <h2 className="mb-2 text-muted text-xs uppercase tracking-widest">
-            {status.replace("_", " ")} ({grouped.get(status)?.length ?? 0})
-          </h2>
-          {grouped.get(status)?.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} onSelect={select} />
-          ))}
-        </section>
-      ))}
-    </div>
-  );
+  return <IssueTable issues={data ?? []} onSelect={select} />;
 }

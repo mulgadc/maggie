@@ -48,13 +48,23 @@ function DepList({
   if (!items?.length) {
     return null;
   }
+  const openItems = items.filter((d) => d.status !== "closed");
+  const hiddenClosed = items.length - openItems.length;
+  if (!openItems.length) {
+    return null;
+  }
   return (
     <section className="mt-5">
       <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
-        {title} ({items.length})
+        {title} ({openItems.length})
+        {hiddenClosed ? (
+          <span className="ml-2 font-normal lowercase tracking-normal">
+            +{hiddenClosed} closed hidden
+          </span>
+        ) : null}
       </h4>
       <ul className="flex flex-col gap-1">
-        {items.map((d) => (
+        {openItems.map((d) => (
           <li key={d.id}>
             <button
               type="button"

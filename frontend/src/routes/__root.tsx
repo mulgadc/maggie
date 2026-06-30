@@ -14,7 +14,8 @@ export const Route = createRootRoute({
 });
 
 const TABS = [
-  { to: "/", label: "Board" },
+  { to: "/", label: "Table" },
+  { to: "/board", label: "Board" },
   { to: "/ready", label: "Ready" },
   { to: "/graph", label: "Graph" },
 ] as const;
