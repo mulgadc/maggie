@@ -55,7 +55,7 @@ function RootLayout() {
           <img src="/maggie.png" alt="maggie" className="h-20 w-auto rounded-lg object-contain" />
           <div className="flex flex-col leading-none">
             <h1 className="font-display text-4xl text-accent lowercase">maggie</h1>
-            <span className="-mt-0.5 text-muted text-xs lowercase italic tracking-wide">
+            <span className="mt-1.5 text-muted text-xs lowercase tracking-widest">
               bead enthusiast
             </span>
           </div>
