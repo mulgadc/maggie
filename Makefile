@@ -1,4 +1,4 @@
-.PHONY: ui build run dev fix preflight docker-build docker-prune docker-seed docker-up docker-down docker-refresh
+.PHONY: ui build run dev fix preflight docker-build docker-prune docker-clean docker-seed docker-up docker-down docker-refresh
 
 # Build the React frontend into the embedded web dir.
 ui:
@@ -30,15 +30,19 @@ preflight:
 
 # --- Docker (portable maggie + dolt stack) ---
 
-# Build the shared image, then reclaim space from the layers it replaced.
-# Force the legacy builder: the host's buildx is too old for this stack.
+# Build the shared image (BuildKit), then drop the layers it orphaned.
 docker-build:
-	DOCKER_BUILDKIT=0 COMPOSE_DOCKER_CLI_BUILD=0 docker compose build
+	docker compose build
 	$(MAKE) docker-prune
 
-# Reclaim disk: drop dangling images and stale build cache left by rebuilds.
+# Reclaim disk from dangling images left by rebuilds. The BuildKit build cache
+# is kept on purpose — it is what makes rebuilds fast. Run `make docker-clean`
+# for a deeper sweep that also clears the build cache.
 docker-prune:
 	docker image prune -f
+
+# Deeper sweep: also clear the BuildKit build cache (slower next build).
+docker-clean: docker-prune
 	docker builder prune -f
 
 # Import snapshot/issues.jsonl into the dolt volume (dolt must be stopped).

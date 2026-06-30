@@ -12,18 +12,26 @@ ARG DOLT_VERSION=2.1.10
 FROM golang:${GO_VERSION}-bookworm AS maggie-build
 WORKDIR /src
 COPY go.mod go.sum* ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -o /out/maggie ./cmd/maggie
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -trimpath -o /out/maggie ./cmd/maggie
 
 # --- bd CLI, pinned to the version the team runs (steveyegge/beads) ---
 FROM golang:${GO_VERSION}-bookworm AS bd-build
 ARG BD_VERSION
-RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential git pkg-config libicu-dev \
- && rm -rf /var/lib/apt/lists/*
+# Drop docker-clean so the apt cache mount actually retains downloaded packages.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
+ && apt-get install -y --no-install-recommends build-essential git pkg-config libicu-dev
 ENV CGO_ENABLED=1
-RUN go install github.com/steveyegge/beads/cmd/bd@${BD_VERSION}
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go install github.com/steveyegge/beads/cmd/bd@${BD_VERSION}
 
 # --- dolt release binary ---
 FROM debian:bookworm-slim AS dolt-fetch
@@ -34,9 +42,13 @@ RUN tar -xzf /tmp/dolt.tgz -C /tmp \
 
 # --- runtime ---
 FROM debian:bookworm-slim
-RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates bash libicu72 jq \
- && rm -rf /var/lib/apt/lists/*
+# Cache mounts hold apt state outside the image, so the lists never land in the
+# final layer and stay slim without an explicit cleanup.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates bash libicu72 jq
 COPY --from=maggie-build /out/maggie         /usr/local/bin/maggie
 COPY --from=bd-build     /go/bin/bd          /usr/local/bin/bd
 COPY --from=dolt-fetch   /usr/local/bin/dolt /usr/local/bin/dolt
