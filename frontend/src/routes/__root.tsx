@@ -1,14 +1,24 @@
-import { createRootRoute, Link, Outlet, useNavigate, useSearch } from "@tanstack/react-router";
+import { createRootRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
+import { FilterBar } from "@/components/filter-bar";
 import { IssueDetail } from "@/components/issue-detail";
+import { type Filters, filtersToParams, paramsToFilters, type TableSearch } from "@/lib/filter";
 
-interface RootSearch {
+interface RootSearch extends TableSearch {
   issue?: string;
 }
 
 export const Route = createRootRoute({
   validateSearch: (search: Record<string, unknown>): RootSearch => ({
     issue: typeof search.issue === "string" ? search.issue : undefined,
+    q: typeof search.q === "string" ? search.q : undefined,
+    idg: typeof search.idg === "string" ? search.idg : undefined,
+    st: typeof search.st === "string" ? search.st : undefined,
+    pri: search.pri === undefined ? undefined : Number(search.pri),
+    type: typeof search.type === "string" ? search.type : undefined,
+    asgn: typeof search.asgn === "string" ? search.asgn : undefined,
+    sort: typeof search.sort === "string" ? (search.sort as TableSearch["sort"]) : undefined,
+    dir: search.dir === "desc" ? "desc" : search.dir === "asc" ? "asc" : undefined,
   }),
   component: RootLayout,
 });
@@ -22,10 +32,16 @@ const TABS = [
 
 function RootLayout() {
   const navigate = useNavigate();
-  const { issue } = useSearch({ from: Route.id });
+  const { pathname } = useLocation();
+  const search = Route.useSearch();
+  const filters = paramsToFilters(search);
 
   const closeDetail = () => navigate({ to: ".", search: (s) => ({ ...s, issue: undefined }) });
   const openIssue = (open: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: open }) });
+  const onFilters = (f: Filters) =>
+    navigate({ to: ".", search: (s) => ({ ...s, ...filtersToParams(f) }) });
+
+  const showFilters = pathname !== "/graph";
 
   return (
     <div className="flex h-full flex-col">
@@ -45,10 +61,11 @@ function RootLayout() {
           ))}
         </nav>
       </header>
+      {showFilters ? <FilterBar filters={filters} onChange={onFilters} /> : null}
       <main className="flex-1 overflow-auto p-5">
         <Outlet />
       </main>
-      <IssueDetail id={issue ?? ""} onSelect={openIssue} onClose={closeDetail} />
+      <IssueDetail id={search.issue ?? ""} onSelect={openIssue} onClose={closeDetail} />
     </div>
   );
 }

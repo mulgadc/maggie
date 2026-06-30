@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"io/fs"
 	"log/slog"
@@ -60,6 +61,11 @@ func main() {
 			http.Error(w, "graph failed", http.StatusBadGateway)
 			return
 		}
+		// bd loads D3 from an external CDN; rewrite to the locally vendored
+		// copy so the graph renders on offline/firewalled hosts.
+		out = bytes.ReplaceAll(out,
+			[]byte("https://d3js.org/d3.v7.min.js"),
+			[]byte("/vendor/d3.v7.min.js"))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(out)
 	})

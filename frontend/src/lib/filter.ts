@@ -130,8 +130,9 @@ export function paramsToSort(s: TableSearch): Sort {
   };
 }
 
-// toParams emits only non-default values so shared URLs stay short.
-export function toParams(f: Filters, s: Sort): TableSearch {
+// filtersToParams / sortToParams emit only non-default values so shared URLs
+// stay short. Defaults map to undefined, which removes the key on navigate.
+export function filtersToParams(f: Filters): TableSearch {
   return {
     q: f.text || undefined,
     idg: f.idGlob || undefined,
@@ -139,9 +140,12 @@ export function toParams(f: Filters, s: Sort): TableSearch {
     pri: f.priority === "all" ? undefined : f.priority,
     type: f.type === "all" ? undefined : f.type,
     asgn: f.assignee === "all" ? undefined : f.assignee,
-    sort: s.key === DEFAULT_SORT.key && s.dir === DEFAULT_SORT.dir ? undefined : s.key,
-    dir: s.key === DEFAULT_SORT.key && s.dir === DEFAULT_SORT.dir ? undefined : s.dir,
   };
+}
+
+export function sortToParams(s: Sort): TableSearch {
+  const isDefault = s.key === DEFAULT_SORT.key && s.dir === DEFAULT_SORT.dir;
+  return { sort: isDefault ? undefined : s.key, dir: isDefault ? undefined : s.dir };
 }
 
 export function uniqueSorted(values: (string | undefined)[]): string[] {

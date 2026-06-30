@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 import type { Issue, Status } from "@/api";
 import { IssueCard } from "@/components/issue-card";
+import { applyFilters, paramsToFilters } from "@/lib/filter";
 import { useIssues } from "@/queries";
 
 export const Route = createFileRoute("/board")({
@@ -12,7 +14,11 @@ const COLUMNS: Status[] = ["open", "in_progress", "blocked", "deferred", "closed
 
 function Board() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const { data, isLoading, error } = useIssues();
+
+  const filters = paramsToFilters(search);
+  const items = useMemo(() => applyFilters(data ?? [], filters), [data, filters]);
 
   const select = (id: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) });
 
@@ -24,7 +30,7 @@ function Board() {
   }
 
   const grouped = new Map<Status, Issue[]>(COLUMNS.map((s) => [s, []]));
-  for (const issue of data ?? []) {
+  for (const issue of items) {
     grouped.get(issue.status)?.push(issue);
   }
 

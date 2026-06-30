@@ -25,7 +25,7 @@ const PRIORITY_STYLE: Record<number, string> = {
 };
 
 const PILL =
-  "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-medium text-xs ring-1 ring-inset";
+  "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 font-medium text-xs ring-1 ring-inset";
 
 export function StatusBadge({ status }: { status: Status }) {
   return (
