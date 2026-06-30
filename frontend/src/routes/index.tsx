@@ -1,15 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  Activity,
-  AlertTriangle,
-  ChevronRight,
-  Clock,
-  Flame,
-  GitMerge,
-  ListOrdered,
-  Tags,
-  Target,
-} from "lucide-react";
+import { Activity, AlertTriangle, Clock, Flame, GitMerge, ListOrdered, Tags } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 
 import type { Issue, Status } from "@/api";
@@ -59,7 +49,24 @@ function Dashboard() {
   const ready = useMemo(() => readyData ?? [], [readyData]);
   const edges = useMemo(() => edgesData ?? [], [edgesData]);
 
-  const sequence = useMemo(() => suggestSequence(all, edges, 16), [all, edges]);
+  const matchesFocus = useMemo(() => {
+    if (focus.startsWith("asgn:")) {
+      const a = focus.slice(5);
+      return (i: Issue) => (i.assignee ?? "") === a;
+    }
+    if (focus.startsWith("pref:")) {
+      const p = focus.slice(5);
+      return (i: Issue) => idPrefix(i.id) === p;
+    }
+    return null;
+  }, [focus]);
+
+  // Sequence is personalised: when a focus identity is picked, only that
+  // person's (or prefix's) beads are sequenced.
+  const sequence = useMemo(() => {
+    const pool = matchesFocus ? all.filter(matchesFocus) : all;
+    return suggestSequence(pool, edges, 5);
+  }, [all, edges, matchesFocus]);
   const prereqs = useMemo(() => prereqIds(sequence, edges), [sequence, edges]);
 
   const counts = useMemo(() => {
@@ -115,31 +122,6 @@ function Dashboard() {
   const assignees = useMemo(() => uniqueSorted(all.map((i) => i.assignee)), [all]);
   const prefixes = useMemo(() => allPrefixes(all), [all]);
 
-  const matchesFocus = useMemo(() => {
-    if (focus.startsWith("asgn:")) {
-      const a = focus.slice(5);
-      return (i: Issue) => (i.assignee ?? "") === a;
-    }
-    if (focus.startsWith("pref:")) {
-      const p = focus.slice(5);
-      return (i: Issue) => idPrefix(i.id) === p;
-    }
-    return null;
-  }, [focus]);
-
-  const yours = useMemo(() => {
-    if (!matchesFocus) {
-      return [];
-    }
-    return openIssues
-      .filter(matchesFocus)
-      .sort((a, b) => {
-        const rank = (s: Status) => (s === "in_progress" ? 0 : s === "blocked" ? 1 : 2);
-        return rank(a.status) - rank(b.status) || byPriority(a, b);
-      })
-      .slice(0, 10);
-  }, [matchesFocus, openIssues]);
-
   const open = (id: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) });
   const toTable = (search: Record<string, unknown>) => navigate({ to: "/table", search });
 
@@ -165,15 +147,44 @@ function Dashboard() {
         ))}
       </div>
 
-      <Panel title="Suggested sequence" icon={<ListOrdered size={15} />}>
+      <Panel
+        title="Suggested sequence"
+        icon={<ListOrdered size={15} />}
+        action={
+          <select
+            className="rounded-md border border-line bg-bg px-2 py-1 text-text text-xs focus:border-accent focus:outline-none"
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+            title="personalise the sequence"
+          >
+            <option value="">everyone</option>
+            {assignees.length ? (
+              <optgroup label="assignee">
+                {assignees.map((a) => (
+                  <option key={`a:${a}`} value={`asgn:${a}`}>
+                    {a}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            <optgroup label="prefix">
+              {prefixes.map((p) => (
+                <option key={`p:${p}`} value={`pref:${p}`}>
+                  {p}-*
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        }
+      >
         {sequence.length ? (
           <SequenceTimeline items={sequence} prereqs={prereqs} onSelect={open} />
         ) : (
-          <Empty text="nothing actionable to sequence" />
+          <Empty text="nothing actionable to sequence for this selection" />
         )}
       </Panel>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Panel title="Open by priority" icon={<Activity size={15} />}>
           <div className="flex flex-col gap-2">
             {priBars.map((b) => (
@@ -225,46 +236,6 @@ function Dashboard() {
             <Empty text="no labelled beads yet — add labels in bd to group work by area" />
           )}
         </Panel>
-
-        <Panel
-          title="Your focus"
-          icon={<Target size={15} />}
-          action={
-            <select
-              className="rounded-md border border-line bg-bg px-2 py-1 text-text text-xs focus:border-accent focus:outline-none"
-              value={focus}
-              onChange={(e) => setFocus(e.target.value)}
-            >
-              <option value="">pick identity…</option>
-              {assignees.length ? (
-                <optgroup label="assignee">
-                  {assignees.map((a) => (
-                    <option key={`a:${a}`} value={`asgn:${a}`}>
-                      {a}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : null}
-              <optgroup label="prefix">
-                {prefixes.map((p) => (
-                  <option key={`p:${p}`} value={`pref:${p}`}>
-                    {p}-*
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          }
-        >
-          {matchesFocus ? (
-            yours.length ? (
-              <IssueList items={yours} onSelect={open} />
-            ) : (
-              <Empty text="nothing open for this identity — nice." />
-            )
-          ) : (
-            <Empty text="pick your assignee or bead prefix to see your active work" />
-          )}
-        </Panel>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -304,42 +275,38 @@ function SequenceTimeline({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="-mx-1 flex items-stretch gap-1 overflow-x-auto px-1 pb-1">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
       {items.map((i, idx) => {
         const deps = prereqs.get(i.id) ?? [];
         return (
-          <div key={i.id} className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => onSelect(i.id)}
-              className="flex h-full w-48 shrink-0 flex-col gap-1.5 rounded-lg border border-line bg-bg p-2.5 text-left transition-colors hover:border-accent"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 font-semibold text-accent text-xs tabular-nums">
-                  {idx + 1}
+          <button
+            key={i.id}
+            type="button"
+            onClick={() => onSelect(i.id)}
+            className="flex flex-col gap-1.5 rounded-lg border border-line bg-bg p-2.5 text-left transition-colors hover:border-accent"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 font-semibold text-accent text-xs tabular-nums">
+                {idx + 1}
+              </span>
+              <PriorityBadge priority={i.priority} />
+              {deps.length ? (
+                <span
+                  className="ml-auto inline-flex items-center gap-0.5 text-muted text-xs"
+                  title={`after ${deps.join(", ")}`}
+                >
+                  <GitMerge size={11} />
+                  {deps.length}
                 </span>
-                <PriorityBadge priority={i.priority} />
-                {deps.length ? (
-                  <span
-                    className="ml-auto inline-flex items-center gap-0.5 text-muted text-xs"
-                    title={`after ${deps.join(", ")}`}
-                  >
-                    <GitMerge size={11} />
-                    {deps.length}
-                  </span>
-                ) : null}
-              </div>
-              <span className="font-mono text-accent text-xs">{i.id}</span>
-              <span className="line-clamp-2 text-sm leading-snug">{i.title}</span>
-              <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
-                <StatusBadge status={i.status} />
-                {i.labels?.[0] ? <LabelChip label={i.labels[0]} /> : null}
-              </div>
-            </button>
-            {idx < items.length - 1 ? (
-              <ChevronRight size={16} className="shrink-0 text-muted" />
-            ) : null}
-          </div>
+              ) : null}
+            </div>
+            <span className="font-mono text-accent text-xs">{i.id}</span>
+            <span className="line-clamp-2 text-sm leading-snug">{i.title}</span>
+            <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
+              <StatusBadge status={i.status} />
+              {i.labels?.[0] ? <LabelChip label={i.labels[0]} /> : null}
+            </div>
+          </button>
         );
       })}
     </div>

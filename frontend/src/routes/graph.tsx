@@ -255,7 +255,7 @@ function ForceGraph({
     : [];
 
   return (
-    <div className="relative h-full min-h-[500px] w-full overflow-hidden rounded-lg border border-line bg-panel">
+    <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-lg border border-line bg-panel">
       <svg ref={svgRef} className="h-full w-full">
         <defs>
           <marker
