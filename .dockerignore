@@ -1,0 +1,9 @@
+.git
+frontend
+snapshot
+docs
+maggie
+dist
+*.log
+.DS_Store
+.beads

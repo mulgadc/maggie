@@ -40,8 +40,37 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 ## Endpoints
 
-- `GET /` — SPA (board / ready / graph)
+- `GET /` — SPA (table / board / ready / graph)
 - `GET /api/issues?status=&priority=&limit=&all=` — list issues
 - `GET /api/ready` — ready-to-work issues
 - `GET /api/issue?id=<id>` — issue detail
-- `GET /api/graph` — interactive dependency graph (HTML)
+- `GET /api/graph` — dependency edges (JSON), rendered client-side
+
+## Docker (portable maggie + dolt stack)
+
+Packages maggie, `bd`, and `dolt` into one image; compose runs a private dolt
+server plus the maggie web UI. Data is a **manual snapshot import** — no live
+mirror. The team keeps editing beads via git/JSONL as usual; this is a
+read-only viewer seeded on demand. Lifts to another host via the named volume.
+
+```bash
+# 1. drop a snapshot of the source-of-truth jsonl
+mkdir -p snapshot
+cp $HOME/Development/mulga/.beads/issues.jsonl snapshot/issues.jsonl
+
+# 2. build + seed + run
+make docker-build
+make docker-seed     # import snapshot -> dolt volume
+make docker-up       # http://localhost:8088
+
+# later: refresh the data from a fresh snapshot
+cp .../issues.jsonl snapshot/issues.jsonl
+make docker-refresh  # stop dolt -> re-seed -> start dolt
+```
+
+Image versions are pinned via build args (`BD_VERSION`, `DOLT_VERSION`,
+`GO_VERSION`) in the `Dockerfile`.
+
+> **Security:** maggie has no built-in auth and the compose file publishes
+> `:8088`. Front it with a VPN or an authenticating reverse proxy, and keep the
+> dolt port (`3307`) internal — never publish it.

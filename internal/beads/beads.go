@@ -79,9 +79,10 @@ func (c *Client) Ready(ctx context.Context) ([]byte, error) {
 	return c.run(ctx, "ready", "--json")
 }
 
-// Show returns details for a single issue as raw bd JSON.
+// Show returns details for a single issue as raw bd JSON. --include-comments
+// streams comment bodies into the payload (bd defaults to count-only).
 func (c *Client) Show(ctx context.Context, id string) ([]byte, error) {
-	return c.run(ctx, "show", "--id", id, "--json")
+	return c.run(ctx, "show", "--id", id, "--json", "--include-comments")
 }
 
 // Edge is a single directed dependency between two issues. Dashed edges are

@@ -51,10 +51,15 @@ function RootLayout() {
   return (
     <div className="flex h-full flex-col">
       <header className="sticky top-0 z-10 flex items-center gap-4 border-line border-b bg-bg px-5 py-3">
-        <h1 className="flex items-center gap-3 font-semibold text-accent text-xl tracking-wide">
-          <img src="/maggie.png" alt="maggie" className="h-16 w-auto rounded-lg object-contain" />
-          maggie
-        </h1>
+        <div className="flex items-center gap-3">
+          <img src="/maggie.png" alt="maggie" className="h-20 w-auto rounded-lg object-contain" />
+          <div className="flex flex-col leading-none">
+            <h1 className="font-display text-4xl text-accent lowercase">maggie</h1>
+            <span className="-mt-0.5 text-muted text-xs lowercase italic tracking-wide">
+              bead enthusiast
+            </span>
+          </div>
+        </div>
         <nav className="-mb-3 ml-auto flex items-stretch gap-1 self-stretch">
           {TABS.map((t) => (
             <Link

@@ -9,6 +9,14 @@ export interface DepRef {
   dependency_type?: string;
 }
 
+export interface Comment {
+  id: string;
+  issue_id?: string;
+  author?: string;
+  text: string;
+  created_at?: string;
+}
+
 export interface Issue {
   id: string;
   title: string;
@@ -30,6 +38,7 @@ export interface Issue {
   comment_count?: number;
   dependencies?: DepRef[];
   dependents?: DepRef[];
+  comments?: Comment[];
 }
 
 export interface Edge {

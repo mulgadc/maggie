@@ -1,4 +1,4 @@
-.PHONY: ui build run dev fix preflight
+.PHONY: ui build run dev fix preflight docker-build docker-seed docker-up docker-down docker-refresh
 
 # Build the React frontend into the embedded web dir.
 ui:
@@ -27,3 +27,26 @@ preflight:
 	go vet ./...
 	cd frontend && pnpm lint
 	go build ./...
+
+# --- Docker (portable maggie + dolt stack) ---
+
+# Build the shared image.
+docker-build:
+	docker compose build
+
+# Import snapshot/issues.jsonl into the dolt volume (dolt must be stopped).
+docker-seed:
+	docker compose run --rm seed
+
+# Start dolt + maggie (http://localhost:8088).
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+# Refresh the seeded data from a new snapshot without a full teardown.
+docker-refresh:
+	docker compose stop dolt
+	docker compose run --rm seed
+	docker compose start dolt

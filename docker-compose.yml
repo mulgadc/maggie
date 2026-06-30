@@ -1,0 +1,38 @@
+name: maggie
+
+services:
+  dolt:
+    build: .
+    image: maggie:local
+    command: ["dolt"]
+    volumes:
+      - dolt-data:/data
+    expose:
+      - "3307" # internal only — do NOT publish the DB port publicly
+    restart: unless-stopped
+
+  maggie:
+    image: maggie:local
+    depends_on:
+      - dolt
+    command: ["maggie"]
+    environment:
+      MAGGIE_ADDR: ":8088"
+      DOLT_HOST: dolt
+      DOLT_PORT: "3307"
+    ports:
+      - "8088:8088" # maggie has NO auth — front with a VPN/reverse-proxy
+    restart: unless-stopped
+
+  # Manual seed/refresh (one-shot): docker compose run --rm seed
+  # Stop the dolt service first so the data dir is unlocked.
+  seed:
+    image: maggie:local
+    command: ["seed"]
+    profiles: ["tools"]
+    volumes:
+      - dolt-data:/data
+      - ./snapshot:/snapshot:ro
+
+volumes:
+  dolt-data:

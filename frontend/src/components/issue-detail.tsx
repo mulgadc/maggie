@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 
-import type { DepRef, Issue } from "@/api";
+import type { Comment, DepRef, Issue } from "@/api";
 import { PriorityBadge, StatusBadge, StatusDot, TypeBadge } from "@/components/badges";
 import { useIssue } from "@/queries";
 
@@ -111,6 +111,32 @@ function Relations({ issue, onSelect }: { issue: Issue; onSelect: (id: string) =
   );
 }
 
+function Comments({ items }: { items?: Comment[] }) {
+  if (!items?.length) {
+    return null;
+  }
+  return (
+    <section className="mt-5">
+      <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
+        Comments ({items.length})
+      </h4>
+      <ul className="flex flex-col gap-2">
+        {items.map((c) => (
+          <li key={c.id} className="rounded-md border border-line bg-bg px-3 py-2">
+            <div className="mb-1 flex items-center gap-2 text-muted text-xs">
+              <span className="font-medium text-text/80">{c.author ?? "unknown"}</span>
+              <span>{fmt(c.created_at)}</span>
+            </div>
+            <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">
+              {c.text}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function IssueDetail({
   id,
   onSelect,
@@ -172,6 +198,7 @@ export function IssueDetail({
             ) : null}
 
             <Relations issue={issue} onSelect={onSelect} />
+            <Comments items={issue.comments} />
           </>
         ) : null}
       </div>
