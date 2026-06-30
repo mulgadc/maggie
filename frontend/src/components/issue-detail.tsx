@@ -1,40 +1,144 @@
 import { X } from "lucide-react";
 
+import type { DepRef, Issue } from "@/api";
+import { PriorityBadge, StatusBadge, StatusDot, TypeBadge } from "@/components/badges";
 import { useIssue } from "@/queries";
 
-export function IssueDetail({ id, onClose }: { id: string; onClose: () => void }) {
+function fmt(ts?: string) {
+  if (!ts) {
+    return "—";
+  }
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? ts : d.toISOString().slice(0, 16).replace("T", " ");
+}
+
+function Meta({ label, value }: { label: string; value?: string }) {
+  if (!value) {
+    return null;
+  }
+  return (
+    <div>
+      <dt className="text-muted text-xs">{label}</dt>
+      <dd className="truncate text-sm">{value}</dd>
+    </div>
+  );
+}
+
+function Section({ title, body }: { title: string; body?: string }) {
+  if (!body?.trim()) {
+    return null;
+  }
+  return (
+    <section className="mt-5">
+      <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">{title}</h4>
+      <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">{body}</p>
+    </section>
+  );
+}
+
+function DepList({
+  title,
+  items,
+  onSelect,
+}: {
+  title: string;
+  items?: DepRef[];
+  onSelect: (id: string) => void;
+}) {
+  if (!items?.length) {
+    return null;
+  }
+  return (
+    <section className="mt-5">
+      <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
+        {title} ({items.length})
+      </h4>
+      <ul className="flex flex-col gap-1">
+        {items.map((d) => (
+          <li key={d.id}>
+            <button
+              type="button"
+              onClick={() => onSelect(d.id)}
+              className="flex w-full items-center gap-2 rounded-md border border-line bg-bg px-2 py-1.5 text-left hover:border-accent"
+            >
+              <StatusDot status={d.status} />
+              <span className="font-mono text-accent text-xs">{d.id}</span>
+              <span className="truncate text-sm">{d.title}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function IssueDetail({
+  id,
+  onSelect,
+  onClose,
+}: {
+  id: string;
+  onSelect: (id: string) => void;
+  onClose: () => void;
+}) {
   const { data: issue, isLoading, error } = useIssue(id);
   const open = id !== "";
 
   return (
     <aside
-      className={`fixed inset-y-0 right-0 z-20 w-[min(560px,100%)] overflow-auto border-line border-l bg-panel p-5 transition-transform ${
+      className={`fixed inset-y-0 right-0 z-20 flex w-[min(620px,100%)] flex-col border-line border-l bg-panel shadow-2xl transition-transform ${
         open ? "translate-x-0" : "translate-x-full"
       }`}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        className="float-right text-muted hover:text-text"
-        aria-label="Close"
-      >
-        <X size={18} />
-      </button>
-      {isLoading ? <p>loading…</p> : null}
-      {error ? <p className="text-accent">error: {error.message}</p> : null}
-      {issue ? (
-        <>
-          <h2 className="font-mono text-amber">{issue.id}</h2>
-          <h3 className="mt-1 font-semibold text-lg">{issue.title}</h3>
-          <div className="mt-1 text-muted text-xs">
-            {issue.status} · P{issue.priority} · {issue.issue_type}
-            {issue.assignee ? ` · ${issue.assignee}` : ""}
-          </div>
-          <pre className="mt-4 whitespace-pre-wrap break-words rounded-lg border border-line bg-bg p-3 text-sm">
-            {issue.description || "(no description)"}
-          </pre>
-        </>
-      ) : null}
+      <div className="flex items-start gap-3 border-line border-b p-5">
+        <div className="min-w-0 flex-1">
+          <div className="font-mono text-accent text-xs">{issue?.id ?? id}</div>
+          <h3 className="mt-1 font-semibold text-lg leading-snug">
+            {issue?.title ?? (isLoading ? "loading…" : "")}
+          </h3>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded p-1 text-muted hover:bg-surface2 hover:text-text"
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-auto p-5">
+        {error ? <p className="text-st-blocked">error: {error.message}</p> : null}
+        {issue ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={issue.status} />
+              <PriorityBadge priority={issue.priority} />
+              <TypeBadge type={issue.issue_type} />
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3">
+              <Meta label="Assignee" value={issue.assignee} />
+              <Meta label="Owner" value={issue.created_by ?? issue.owner} />
+              <Meta label="Created" value={fmt(issue.created_at)} />
+              <Meta label="Updated" value={fmt(issue.updated_at)} />
+              {issue.closed_at ? <Meta label="Closed" value={fmt(issue.closed_at)} /> : null}
+            </dl>
+
+            <Section title="Description" body={issue.description} />
+            <Section title="Acceptance Criteria" body={issue.acceptance_criteria} />
+            <Section title="Notes" body={issue.notes} />
+            {issue.status === "closed" && issue.close_reason ? (
+              <Section title="Close Reason" body={issue.close_reason} />
+            ) : null}
+
+            <DepList title="Depends on" items={issue.dependencies} onSelect={onSelect} />
+            <DepList title="Blocks" items={issue.dependents} onSelect={onSelect} />
+          </>
+        ) : null}
+      </div>
     </aside>
   );
 }
+
+export type { Issue };
