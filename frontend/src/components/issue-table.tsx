@@ -37,7 +37,7 @@ const COLS: { key: SortKey; label: string; className?: string }[] = [
   { key: "status", label: "Status", className: "w-28" },
   { key: "issue_type", label: "Type", className: "w-24" },
   { key: "assignee", label: "Assignee", className: "w-36" },
-  { key: "updated_at", label: "Updated", className: "w-24" },
+  { key: "updated_at", label: "Updated", className: "w-28 pr-5" },
 ];
 
 function Cells({ i, indent, rail }: { i: Issue; indent?: boolean; rail?: boolean }) {
@@ -63,7 +63,7 @@ function Cells({ i, indent, rail }: { i: Issue; indent?: boolean; rail?: boolean
       <td className="truncate px-3 py-2 text-muted" title={i.assignee ?? ""}>
         {i.assignee ?? "—"}
       </td>
-      <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(i.updated_at)}</td>
+      <td className="whitespace-nowrap py-2 pr-5 pl-3 text-muted">{fmtDate(i.updated_at)}</td>
     </>
   );
 }
@@ -220,7 +220,7 @@ function EpicGroup({
         <td className="truncate px-3 py-2 text-muted" title={epic.assignee ?? ""}>
           {epic.assignee ?? "—"}
         </td>
-        <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(epic.updated_at)}</td>
+        <td className="whitespace-nowrap py-2 pr-5 pl-3 text-muted">{fmtDate(epic.updated_at)}</td>
       </tr>
       {expanded
         ? kids.map((c, idx) => (

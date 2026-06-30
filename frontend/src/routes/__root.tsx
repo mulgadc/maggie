@@ -33,7 +33,8 @@ export const Route = createRootRoute({
 });
 
 const TABS = [
-  { to: "/", label: "Table" },
+  { to: "/", label: "Dashboard" },
+  { to: "/table", label: "Table" },
   { to: "/board", label: "Board" },
   { to: "/ready", label: "Ready" },
   { to: "/graph", label: "Graph" },
