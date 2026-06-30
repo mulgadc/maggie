@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { Layers, X } from "lucide-react";
 import { useMemo } from "react";
 
 import type { Status } from "@/api";
@@ -50,9 +50,13 @@ function StatusChips({
 export function FilterBar({
   filters,
   onChange,
+  grouped,
+  onToggleGroup,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
+  grouped?: boolean;
+  onToggleGroup?: () => void;
 }) {
   const { data: issues } = useIssues();
   const all = issues ?? [];
@@ -123,7 +127,21 @@ export function FilterBar({
             <X size={14} /> clear
           </button>
         ) : null}
-        <span className="ml-auto text-muted text-sm">
+        {onToggleGroup ? (
+          <button
+            type="button"
+            onClick={onToggleGroup}
+            aria-pressed={grouped}
+            className={`ml-auto inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-sm ${
+              grouped
+                ? "border-accent bg-accent/15 text-accent"
+                : "border-line text-muted hover:text-text"
+            }`}
+          >
+            <Layers size={14} /> group by epic
+          </button>
+        ) : null}
+        <span className={`text-muted text-sm ${onToggleGroup ? "" : "ml-auto"}`}>
           {matched} of {all.length}
         </span>
       </div>

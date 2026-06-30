@@ -34,8 +34,6 @@ function Table() {
   const onSortChange = (s: Sort) =>
     navigate({ to: ".", search: (p) => ({ ...p, ...sortToParams(s) }) });
   const select = (id: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) });
-  const toggleGroup = () =>
-    navigate({ to: ".", search: (s) => ({ ...s, grp: grouped ? undefined : true }) });
 
   if (isLoading) {
     return <p className="text-muted">loading…</p>;
@@ -45,18 +43,12 @@ function Table() {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex w-fit cursor-pointer items-center gap-2 text-muted text-sm">
-        <input type="checkbox" checked={grouped} onChange={toggleGroup} className="accent-accent" />
-        group by epic
-      </label>
-      <IssueTable
-        rows={rows}
-        groups={groups}
-        sort={sort}
-        onSortChange={onSortChange}
-        onSelect={select}
-      />
-    </div>
+    <IssueTable
+      rows={rows}
+      groups={groups}
+      sort={sort}
+      onSortChange={onSortChange}
+      onSelect={select}
+    />
   );
 }

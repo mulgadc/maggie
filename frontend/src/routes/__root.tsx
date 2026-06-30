@@ -41,8 +41,12 @@ function RootLayout() {
   const openIssue = (open: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: open }) });
   const onFilters = (f: Filters) =>
     navigate({ to: ".", search: (s) => ({ ...s, ...filtersToParams(f) }) });
+  const grouped = search.grp === true;
+  const onToggleGroup = () =>
+    navigate({ to: ".", search: (s) => ({ ...s, grp: grouped ? undefined : true }) });
 
   const showFilters = pathname !== "/graph";
+  const isTable = pathname === "/";
 
   return (
     <div className="flex h-full flex-col">
@@ -65,7 +69,14 @@ function RootLayout() {
           ))}
         </nav>
       </header>
-      {showFilters ? <FilterBar filters={filters} onChange={onFilters} /> : null}
+      {showFilters ? (
+        <FilterBar
+          filters={filters}
+          onChange={onFilters}
+          grouped={isTable ? grouped : undefined}
+          onToggleGroup={isTable ? onToggleGroup : undefined}
+        />
+      ) : null}
       <main className="flex-1 overflow-auto p-5">
         <Outlet />
       </main>

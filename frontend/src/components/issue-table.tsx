@@ -23,16 +23,17 @@ const COLS: { key: SortKey; label: string; className?: string }[] = [
   { key: "updated_at", label: "Updated", className: "w-24" },
 ];
 
-function Cells({ i, indent }: { i: Issue; indent?: boolean }) {
+function Cells({ i, indent, rail }: { i: Issue; indent?: boolean; rail?: boolean }) {
   return (
     <>
-      <td className="px-3 py-2">
+      <td className={`px-3 py-2 ${rail ? "border-accent/40 border-l-2" : ""}`}>
         <PriorityBadge priority={i.priority} />
       </td>
       <td
         className={`truncate px-3 py-2 font-mono text-accent text-xs ${indent ? "pl-8" : ""}`}
         title={i.id}
       >
+        {indent ? <span className="mr-1 text-muted">└</span> : null}
         {i.id}
       </td>
       <td className="truncate px-3 py-2" title={i.title}>
@@ -155,26 +156,33 @@ function EpicGroup({
 }) {
   return (
     <>
-      <tr className="border-line border-b bg-accent/5 hover:bg-accent/10">
-        <td className="px-3 py-2">
+      <tr
+        onClick={onToggle}
+        className="cursor-pointer border-line border-b bg-accent/10 hover:bg-accent/15"
+      >
+        <td className="border-accent border-l-2 px-3 py-2">
           <PriorityBadge priority={epic.priority} />
         </td>
         <td className="truncate px-3 py-2 font-mono text-accent text-xs" title={epic.id}>
+          <span className="inline-flex items-center gap-1 font-semibold">
+            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {epic.id}
+          </span>
+        </td>
+        <td className="truncate px-3 py-2 font-semibold">
           <button
             type="button"
-            onClick={onToggle}
-            className="inline-flex items-center gap-1 hover:text-text"
-            aria-label={expanded ? "collapse" : "expand"}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(epic.id);
+            }}
+            className="hover:text-accent"
           >
-            {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            {epic.id}
-          </button>
-        </td>
-        <td className="truncate px-3 py-2">
-          <button type="button" onClick={() => onSelect(epic.id)} className="hover:text-accent">
             {epic.title}
           </button>
-          <span className="ml-2 text-muted text-xs">({kids.length})</span>
+          <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 font-normal text-accent text-xs">
+            {kids.length} {kids.length === 1 ? "child" : "children"}
+          </span>
         </td>
         <td className="px-3 py-2">
           <StatusBadge status={epic.status} />
@@ -188,13 +196,15 @@ function EpicGroup({
         <td className="whitespace-nowrap px-3 py-2 text-muted">{fmtDate(epic.updated_at)}</td>
       </tr>
       {expanded
-        ? kids.map((c) => (
+        ? kids.map((c, idx) => (
             <tr
               key={c.id}
               onClick={() => onSelect(c.id)}
-              className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+              className={`cursor-pointer bg-surface2/20 hover:bg-surface2/50 ${
+                idx === kids.length - 1 ? "border-accent/40 border-b-2" : "border-line border-b"
+              }`}
             >
-              <Cells i={c} indent />
+              <Cells i={c} indent rail />
             </tr>
           ))
         : null}
