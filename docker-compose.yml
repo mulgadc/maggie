@@ -21,7 +21,10 @@ services:
       DOLT_HOST: dolt
       DOLT_PORT: "3307"
     ports:
-      - "8088:8088" # maggie has NO auth — front with a VPN/reverse-proxy
+      # Serve on host port 80 so the team can reach it by hostname (no :port).
+      # Override with MAGGIE_PORT for local dev if 80 is taken.
+      # maggie has NO auth — keep this on a trusted LAN / front with a proxy.
+      - "${MAGGIE_PORT:-80}:8088"
     restart: unless-stopped
 
   # Manual seed/refresh (one-shot): docker compose run --rm seed
