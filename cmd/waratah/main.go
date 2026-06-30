@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mulgadc/waratah/internal/beads"
@@ -37,7 +39,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", http.FileServer(http.FS(sub)))
+	mux.Handle("/", spaHandler(sub))
 	mux.HandleFunc("/api/ready", jsonHandler(func(r *http.Request) ([]byte, error) {
 		return bd.Ready(r.Context())
 	}))
@@ -68,6 +70,23 @@ func main() {
 		slog.Error("serve", "err", err)
 		os.Exit(1)
 	}
+}
+
+// spaHandler serves embedded static assets, falling back to index.html for
+// client-side routes (paths with no file extension that are not found).
+func spaHandler(sub fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(sub))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p := path.Clean(strings.TrimPrefix(r.URL.Path, "/"))
+		if p == "." {
+			p = "index.html"
+		}
+		if _, err := fs.Stat(sub, p); err != nil && path.Ext(p) == "" {
+			r = r.Clone(r.Context())
+			r.URL.Path = "/"
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 }
 
 // parseList builds ListOpts from allowlisted, validated query params.

@@ -6,12 +6,28 @@ issues. Part of the Mulga stack.
 Reads come from the `bd` CLI (`bd ... --json`); writes (later) also go through
 `bd` so bead invariants stay intact. See [docs/plan.md](docs/plan.md).
 
-## Run
+## Stack
+
+- Backend: Go HTTP server, embeds the built frontend.
+- Frontend: Vite + React 19 + TanStack Router/Query + Tailwind 4 (matches
+  `spinifex-ui` conventions: oxlint/oxfmt, pnpm).
+
+## Build & run
 
 ```bash
-# from a directory containing a .beads/ dir, or point at one:
-WARATAH_BEADS_DIR=$HOME/Development/mulga go run ./cmd/waratah
+make all     # build frontend -> embed -> build Go binary
+make run     # build + serve (default WARATAH_BEADS_DIR=$HOME/Development/mulga)
 # open http://localhost:8088
+```
+
+The Go binary embeds `cmd/waratah/web` (the Vite build output). `make build`
+alone works only after `make ui` has produced that output at least once.
+
+## Frontend dev (hot reload)
+
+```bash
+make run          # backend on :8088 (terminal 1)
+make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 ```
 
 ## Config (env)
