@@ -50,7 +50,7 @@ export function TypeBadge({ type }: { type: string }) {
 }
 
 // labelHue maps a label to a stable hue so each tag keeps one colour everywhere.
-function labelHue(label: string): number {
+export function labelHue(label: string): number {
   let h = 0;
   for (let i = 0; i < label.length; i++) {
     h = (h * 31 + label.charCodeAt(i)) % 360;
