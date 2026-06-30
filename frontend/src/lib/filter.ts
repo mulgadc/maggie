@@ -172,6 +172,19 @@ export function rootId(id: string): string {
   return dot === -1 ? id : id.slice(0, dot);
 }
 
+// idPrefix returns the bead's project/area prefix by dropping the numeric tail
+// off the root id (mulga-siv-477 -> mulga-siv, mulga-7g1 -> mulga).
+export function idPrefix(id: string): string {
+  const root = rootId(id);
+  const dash = root.lastIndexOf("-");
+  return dash === -1 ? root : root.slice(0, dash);
+}
+
+// allPrefixes lists every distinct id prefix, sorted.
+export function allPrefixes(issues: Issue[]): string[] {
+  return uniqueSorted(issues.map((i) => idPrefix(i.id)));
+}
+
 export type GroupNode =
   | { kind: "epic"; issue: Issue; children: Issue[] }
   | { kind: "loose"; issue: Issue };

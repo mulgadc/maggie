@@ -54,8 +54,8 @@ function RootLayout() {
   const onGroupMode = (m: GroupMode) =>
     navigate({ to: ".", search: (s) => ({ ...s, group: m === "none" ? undefined : m }) });
 
-  const showFilters = pathname !== "/graph";
-  const isTable = pathname === "/";
+  const showFilters = pathname !== "/graph" && pathname !== "/";
+  const isTable = pathname === "/table";
 
   return (
     <div className="flex h-full flex-col">
@@ -64,7 +64,7 @@ function RootLayout() {
           <img src="/maggie.png" alt="maggie" className="h-20 w-auto rounded-lg object-contain" />
           <div className="flex flex-col leading-none">
             <h1 className="font-display text-4xl text-accent lowercase">maggie</h1>
-            <span className="mt-1.5 text-muted text-xs lowercase tracking-widest">
+            <span className="mt-1.5 text-muted text-xs lowercase tracking-[0.2em] [text-align-last:justify]">
               bead enthusiast
             </span>
           </div>
