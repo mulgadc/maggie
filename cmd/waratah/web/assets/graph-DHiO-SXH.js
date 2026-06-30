@@ -1,0 +1,1 @@
+import{u as e}from"./index-CX0cnlPP.js";var t=e();function n(){return(0,t.jsx)(`iframe`,{title:`dependency graph`,src:`/api/graph`,className:`h-[calc(100vh-7rem)] w-full rounded-lg border border-line bg-white`})}export{n as component};
