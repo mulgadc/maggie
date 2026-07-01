@@ -9,3 +9,6 @@ frontend/src/routeTree.gen.ts
 
 # Docker — local snapshots (jsonl is a throwaway import, not source)
 snapshot/*.jsonl
+
+# Exported DB backups (team data; pushed to a separate backup repo, not this one)
+backups/

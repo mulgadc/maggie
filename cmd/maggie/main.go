@@ -19,10 +19,11 @@ import (
 	"github.com/mulgadc/maggie/internal/roster"
 )
 
-// fallbackActors seeds the identity picker when the GitHub org cannot be reached
-// (offline or no token), so writes always have a roster to pick from.
+// fallbackActors seeds the identity picker when the GitHub org member list is
+// unavailable. Org membership is private by default, so the unauthenticated API
+// returns an empty list; without a read:org token this static roster is used.
 var fallbackActors = []string{
-	"benduncan", "brynmailer-mdc", "joshsiv-mulga", "juliansommer", "tomnewton-mulga",
+	"benduncan", "brynmailer-mdc", "Jai808", "joshsiv-mulga", "juliansommer", "tomnewton-mulga",
 }
 
 //go:embed web

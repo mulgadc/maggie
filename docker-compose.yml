@@ -28,8 +28,9 @@ services:
       DOLT_USER: "${DOLT_USER:-beads}"
       DOLT_PASSWORD: "${DOLT_PASSWORD:-}"
       # Identity roster for edits: members of this GitHub org seed the "acting as"
-      # picker. GITHUB_TOKEN (read:org PAT) is only needed to see private members;
-      # public members list without it. Falls back to a static list if offline.
+      # picker. Org membership is private by default, so without a read:org
+      # GITHUB_TOKEN the API returns nothing and maggie uses its built-in static
+      # roster. A token makes the list dynamic (auto-tracks the org).
       GITHUB_ORG: "${GITHUB_ORG:-mulgadc}"
       GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
     ports:

@@ -24,8 +24,11 @@ promoting that dolt server to the live, shared beads backend that every dev's
   Confirm every dev runs the same `bd version` before cutover.
 - **Non-root account.** Devs connect as the shared `beads` user (read/write, no
   DROP). `root` stays break-glass. See the authz note below.
-- **Roster token.** Set `GITHUB_TOKEN` (a read:org PAT) on the server so maggie's
-  identity picker lists private org members; public members list without it.
+- **Roster token (optional).** Org membership is private by default, so the
+  unauthenticated GitHub API returns an empty member list even for a public org.
+  Without `GITHUB_TOKEN` maggie falls back to its built-in static roster (fine for
+  a small, stable team). Set a read:org `GITHUB_TOKEN` only if you want the picker
+  to track the org automatically.
 - **Authoring standard.** New beads follow `docs/beads-authoring.md` (fields +
   label taxonomy). Move that guide into `mulga/.claude/` at cutover.
 
@@ -96,6 +99,23 @@ JSONL becomes export-only. Running both invites split-brain. Confirm your
 
 ## Backups
 
-The dolt volume is the whole database. Dolt is versioned (git-like), so schedule
-`dolt backup` or push to a dolt remote rather than relying on volume snapshots
-alone. Keep backups off-box.
+The dolt volume is the whole database — back it up off-box, not just as a volume
+snapshot.
+
+**GitHub (recommended, simple).** Dolt cannot use GitHub as a remote (dolt is not
+a git format), but the issue data exports to JSONL, which *is* git-friendly and is
+exactly what the seed imports — so a JSONL backup round-trips. Point `./backups`
+at a clone of a **private** backup repo (deploy key or token) and run:
+
+```
+BACKUP_GIT=1 make docker-backup      # export live DB -> ./backups, commit + push
+```
+
+Schedule it (cron or a systemd timer) nightly on the server. To restore, drop the
+latest `issues.jsonl` at `snapshot/issues.jsonl` and re-seed. This captures the
+issues but not dolt branches/commit history.
+
+**Full-fidelity (optional).** For point-in-time dolt history off-box, use a native
+dolt backup target — `dolt backup` supports `aws` (S3), `gs`, `http(s)`, and
+`file` URLs (not GitHub). Add one and `dolt backup sync` on a schedule if you need
+branch/commit granularity in addition to the JSONL snapshots.

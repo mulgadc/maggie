@@ -1,4 +1,4 @@
-.PHONY: ui build run dev fix preflight docker-build docker-prune docker-clean docker-seed docker-up docker-down docker-refresh
+.PHONY: ui build run dev fix preflight docker-build docker-prune docker-clean docker-seed docker-up docker-down docker-refresh docker-backup
 
 # Build the React frontend into the embedded web dir.
 ui:
@@ -55,6 +55,11 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+# Export the live DB to ./backups as JSONL (off-box/GitHub backup). Set BACKUP_GIT=1
+# to also commit+push if ./backups is a clone of a backup repo. See scripts/backup.sh.
+docker-backup:
+	./scripts/backup.sh
 
 # Refresh the seeded data from a new snapshot without a full teardown.
 docker-refresh:
