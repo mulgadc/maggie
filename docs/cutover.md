@@ -31,6 +31,12 @@ promoting that dolt server to the live, shared beads backend that every dev's
   to track the org automatically.
 - **Authoring standard.** New beads follow `docs/beads-authoring.md` (fields +
   label taxonomy). Move that guide into `mulga/.claude/` at cutover.
+- **Boot persistence.** Both services carry `restart: unless-stopped`, so they
+  survive crashes and host reboots — but only if the Docker daemon starts on
+  boot. Enable it on the server: `sudo systemctl enable --now docker`. Note the
+  `unless-stopped` semantics: a manual `docker compose down`/`stop` sticks across
+  a reboot (containers stay down until you `up -d` again); only a running stack
+  auto-resumes.
 
 ## Security model
 
