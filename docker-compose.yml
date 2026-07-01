@@ -22,8 +22,10 @@ services:
       MAGGIE_ADDR: ":8088"
       DOLT_HOST: dolt
       DOLT_PORT: "3307"
-      # Auth for the dolt account maggie connects with (defaults: root / none).
-      DOLT_USER: "${DOLT_USER:-root}"
+      # Auth for the dolt account maggie connects with (defaults: beads / none).
+      # beads is the shared least-privilege account (read/write, no DROP); set
+      # DOLT_USER=root to fall back to the full-privilege break-glass account.
+      DOLT_USER: "${DOLT_USER:-beads}"
       DOLT_PASSWORD: "${DOLT_PASSWORD:-}"
     ports:
       # Serve on host port 80 so the team can reach it by hostname (no :port).
@@ -40,7 +42,7 @@ services:
     profiles: ["tools"]
     environment:
       # Match maggie so the seeded account and its password line up.
-      DOLT_USER: "${DOLT_USER:-root}"
+      DOLT_USER: "${DOLT_USER:-beads}"
       DOLT_PASSWORD: "${DOLT_PASSWORD:-}"
     volumes:
       - dolt-data:/data

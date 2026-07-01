@@ -47,16 +47,26 @@ case "$role" in
     # remote bd clients can connect. When DOLT_PASSWORD is set the account
     # requires it (defence-in-depth on top of the VPN); otherwise it stays
     # passwordless for local/dev use.
+    #
+    # root@% keeps full privileges (break-glass / back-compat). Any other user is
+    # the shared dev account and gets a least-privilege grant scoped to the beads
+    # database: read/write rows and evolve schema, but NO DROP, so it cannot drop
+    # tables or destroy the database.
     duser="${DOLT_USER:-root}"
-    if [ -n "${DOLT_PASSWORD:-}" ]; then
-      ( cd "$DOLT_DATA" && dolt sql -q \
-          "CREATE USER IF NOT EXISTS '$duser'@'%' IDENTIFIED BY '$DOLT_PASSWORD'; GRANT ALL PRIVILEGES ON *.* TO '$duser'@'%' WITH GRANT OPTION;" )
-      echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT (user $duser, password set)"
+    if [ "$duser" = "root" ]; then
+      grant="GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;"
     else
-      ( cd "$DOLT_DATA" && dolt sql -q \
-          "CREATE USER IF NOT EXISTS '$duser'@'%'; GRANT ALL PRIVILEGES ON *.* TO '$duser'@'%' WITH GRANT OPTION;" )
-      echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT (user $duser, no password)"
+      grant="GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, EXECUTE, CREATE ROUTINE, ALTER ROUTINE, CREATE TEMPORARY TABLES, LOCK TABLES ON $BEADS_PREFIX.* TO '$duser'@'%';"
     fi
+    if [ -n "${DOLT_PASSWORD:-}" ]; then
+      create="CREATE USER IF NOT EXISTS '$duser'@'%' IDENTIFIED BY '$DOLT_PASSWORD';"
+      note="password set"
+    else
+      create="CREATE USER IF NOT EXISTS '$duser'@'%';"
+      note="no password"
+    fi
+    ( cd "$DOLT_DATA" && dolt sql -q "$create $grant" )
+    echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT (user $duser, $note)"
     ;;
 
   maggie)

@@ -22,10 +22,16 @@ promoting that dolt server to the live, shared beads backend that every dev's
   TLS on dolt. The server lives on the LAN and every dev reaches it through the
   VPN, so the tunnel already encrypts the wire. Do **not** publish `3307` to an
   untrusted network.
-- **Authn:** set `DOLT_PASSWORD` (and optionally `DOLT_USER`, default `root`).
+- **Authn:** set `DOLT_PASSWORD` (and optionally `DOLT_USER`, default `beads`).
   The seed creates the account with that password and clients must supply it via
   `BEADS_DOLT_PASSWORD`. With no password set the account is passwordless
   (local/dev only).
+- **Authz:** `beads` is the shared dev account. It is scoped to the beads
+  database with read/write and schema-evolution grants (`SELECT, INSERT, UPDATE,
+  DELETE, CREATE, ALTER, INDEX, REFERENCES, EXECUTE, CREATE/ALTER ROUTINE,
+  CREATE TEMPORARY TABLES, LOCK TABLES`) but **no `DROP`**, so a dev cannot drop
+  a table or destroy the database. `root@%` is a full-privilege break-glass
+  account created only when `DOLT_USER=root`; keep it out of everyday use.
 - **Exposure:** `3307` is internal to the compose network by default (no host
   bind). To serve remote clients, layer `docker-compose.publish.yml` on the LAN
   server and set `DOLT_ADDR` to the interface to bind (`0.0.0.0` or the LAN IP).
@@ -59,7 +65,7 @@ Each dev, in their beads working dir:
 export BEADS_DOLT_PASSWORD='<strong-password>'   # add to your shell profile
 bd init --backend dolt --server \
   --server-host <server-host> --server-port 3307 \
-  --server-user root --prefix mulga
+  --server-user beads --prefix mulga
 ```
 
 Then stop using the local embedded/JSONL backend. Do **not** keep committing
