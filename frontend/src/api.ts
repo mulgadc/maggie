@@ -72,3 +72,55 @@ export async function fetchIssue(id: string): Promise<Issue | undefined> {
   const arr = await getJSON<Issue[]>(`/api/issue?id=${encodeURIComponent(id)}`);
   return arr[0];
 }
+
+async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error((await res.text().catch(() => "")) || `${path} -> ${res.status}`);
+  }
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  const arr = (await res.json()) as Issue[];
+  return arr[0] as T;
+}
+
+// UpdatePayload mirrors the backend: absent fields are omitted (left unchanged);
+// assignee "" clears it. add_labels/remove_labels carry label deltas.
+export interface UpdatePayload {
+  status?: Status;
+  priority?: string;
+  assignee?: string;
+  description?: string;
+  notes?: string;
+  acceptance?: string;
+  add_labels?: string[];
+  remove_labels?: string[];
+}
+
+export function updateIssue(
+  id: string,
+  actor: string,
+  patch: UpdatePayload,
+): Promise<Issue | undefined> {
+  return postJSON("/api/issue/update", { id, actor, ...patch });
+}
+
+export function addComment(id: string, actor: string, text: string): Promise<Issue | undefined> {
+  return postJSON("/api/issue/comment", { id, actor, text });
+}
+
+export type DepType = "blocks" | "relates-to" | "parent";
+
+export function addDep(
+  id: string,
+  actor: string,
+  dependsOn: string,
+  type: DepType,
+): Promise<Issue | undefined> {
+  return postJSON("/api/issue/dep", { id, actor, depends_on: dependsOn, type });
+}

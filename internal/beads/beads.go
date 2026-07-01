@@ -93,6 +93,87 @@ func (c *Client) Show(ctx context.Context, id string) ([]byte, error) {
 	return c.run(ctx, "show", "--id", id, "--json", "--include-dependents", "--include-comments")
 }
 
+// UpdateFields holds the mutable issue fields for Update. Empty scalar fields
+// are omitted from the bd call; a nil pointer means "leave unchanged" while a
+// non-nil pointer (including "") is applied, so assignee can be cleared.
+type UpdateFields struct {
+	Status       string   // open|in_progress|blocked|deferred|closed
+	Priority     string   // 0-4
+	Assignee     *string  // nil = unchanged, "" = clear
+	Description  *string  // nil = unchanged
+	Notes        *string  // nil = unchanged
+	Acceptance   *string  // nil = unchanged
+	AddLabels    []string // labels to add
+	RemoveLabels []string // labels to remove
+}
+
+// empty reports whether f carries no change, so callers can reject no-op writes.
+func (f UpdateFields) empty() bool {
+	return f.Status == "" && f.Priority == "" && f.Assignee == nil && f.Description == nil &&
+		f.Notes == nil && f.Acceptance == nil && len(f.AddLabels) == 0 && len(f.RemoveLabels) == 0
+}
+
+// write runs a bd mutation with the shared audit actor and eager dolt commit so
+// the change lands in history immediately (the server defaults auto-commit off).
+func (c *Client) write(ctx context.Context, actor string, args ...string) error {
+	args = append(args, "--actor", actor, "--dolt-auto-commit", "on")
+	_, err := c.run(ctx, args...)
+	return err
+}
+
+// Update applies the provided fields to one issue via a single `bd update`.
+func (c *Client) Update(ctx context.Context, id string, f UpdateFields, actor string) error {
+	if f.empty() {
+		return fmt.Errorf("update: no fields to change")
+	}
+	args := []string{"update", id}
+	if f.Status != "" {
+		args = append(args, "-s", f.Status)
+	}
+	if f.Priority != "" {
+		args = append(args, "-p", f.Priority)
+	}
+	if f.Assignee != nil {
+		args = append(args, "-a", *f.Assignee)
+	}
+	if f.Description != nil {
+		args = append(args, "-d", *f.Description)
+	}
+	if f.Notes != nil {
+		args = append(args, "--notes", *f.Notes)
+	}
+	if f.Acceptance != nil {
+		args = append(args, "--acceptance", *f.Acceptance)
+	}
+	for _, l := range f.AddLabels {
+		args = append(args, "--add-label", l)
+	}
+	for _, l := range f.RemoveLabels {
+		args = append(args, "--remove-label", l)
+	}
+	return c.write(ctx, actor, args...)
+}
+
+// AddComment appends a comment authored by actor to an issue.
+func (c *Client) AddComment(ctx context.Context, id, text, actor string) error {
+	return c.write(ctx, actor, "comments", "add", id, text)
+}
+
+// AddDep links issueID to dependsOn. depType selects the bd verb: "blocks"
+// (dependsOn blocks issueID), "relates-to" (symmetric), or "parent" (reparent).
+func (c *Client) AddDep(ctx context.Context, issueID, dependsOn, depType, actor string) error {
+	switch depType {
+	case "blocks":
+		return c.write(ctx, actor, "dep", "add", issueID, dependsOn)
+	case "relates-to":
+		return c.write(ctx, actor, "dep", "relate", issueID, dependsOn)
+	case "parent":
+		return c.write(ctx, actor, "update", issueID, "--parent", dependsOn)
+	default:
+		return fmt.Errorf("addDep: bad type %q", depType)
+	}
+}
+
 // Edge is a single directed dependency between two issues. Dashed edges are
 // parent/child (subtask) links; solid edges are hard dependencies.
 type Edge struct {

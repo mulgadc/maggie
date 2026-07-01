@@ -1,5 +1,6 @@
 import { createRootRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 
+import { ActorMenu } from "@/components/actor-menu";
 import { FilterBar } from "@/components/filter-bar";
 import { IssueDetail } from "@/components/issue-detail";
 import {
@@ -82,6 +83,9 @@ function RootLayout() {
             </Link>
           ))}
         </nav>
+        <div className="self-center">
+          <ActorMenu />
+        </div>
       </header>
       {showFilters ? (
         <FilterBar

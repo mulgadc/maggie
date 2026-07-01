@@ -227,6 +227,13 @@ export function allLabels(issues: Issue[]): string[] {
   return uniqueSorted(issues.flatMap((i) => i.labels ?? []));
 }
 
+// allActors lists every distinct person seen in the data (assignees and
+// creators), sorted. Used to seed the identity picker and assignee editor so the
+// list maintains itself without a static roster.
+export function allActors(issues: Issue[]): string[] {
+  return uniqueSorted(issues.flatMap((i) => [i.assignee, i.created_by, i.owner]));
+}
+
 // buildLabelGroups buckets issues by label (alphabetical), with the unlabeled
 // bucket last. An issue with several labels appears under each of them.
 export function buildLabelGroups(rows: Issue[]): LabelGroup[] {

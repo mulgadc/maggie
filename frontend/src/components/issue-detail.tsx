@@ -1,8 +1,19 @@
 import { X } from "lucide-react";
+import type { ReactNode } from "react";
 
 import type { Comment, DepRef, Issue } from "@/api";
-import { LabelChip, PriorityBadge, StatusBadge, StatusDot, TypeBadge } from "@/components/badges";
-import { useIssue } from "@/queries";
+import { StatusDot, TypeBadge } from "@/components/badges";
+import {
+  AssigneeEditor,
+  CommentForm,
+  DepAdder,
+  EditableText,
+  LabelEditor,
+  PriorityEditor,
+  StatusEditor,
+} from "@/components/issue-edit";
+import { useActor } from "@/lib/actor";
+import { useIssue, useIssues } from "@/queries";
 
 function fmt(ts?: string) {
   if (!ts) {
@@ -20,6 +31,15 @@ function Meta({ label, value }: { label: string; value?: string }) {
     <div>
       <dt className="text-muted text-xs">{label}</dt>
       <dd className="truncate text-sm">{value}</dd>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <dt className="text-muted text-xs">{label}</dt>
+      <dd className="mt-0.5">{children}</dd>
     </div>
   );
 }
@@ -111,29 +131,24 @@ function Relations({ issue, onSelect }: { issue: Issue; onSelect: (id: string) =
   );
 }
 
-function Comments({ items }: { items?: Comment[] }) {
+function CommentList({ items }: { items?: Comment[] }) {
   if (!items?.length) {
-    return null;
+    return <p className="text-muted text-sm italic">no comments yet</p>;
   }
   return (
-    <section className="mt-5">
-      <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
-        Comments ({items.length})
-      </h4>
-      <ul className="flex flex-col gap-2">
-        {items.map((c) => (
-          <li key={c.id} className="rounded-md border border-line bg-bg px-3 py-2">
-            <div className="mb-1 flex items-center gap-2 text-muted text-xs">
-              <span className="font-medium text-text/80">{c.author ?? "unknown"}</span>
-              <span>{fmt(c.created_at)}</span>
-            </div>
-            <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">
-              {c.text}
-            </p>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <ul className="flex flex-col gap-2">
+      {items.map((c) => (
+        <li key={c.id} className="rounded-md border border-line bg-bg px-3 py-2">
+          <div className="mb-1 flex items-center gap-2 text-muted text-xs">
+            <span className="font-medium text-text/80">{c.author ?? "unknown"}</span>
+            <span>{fmt(c.created_at)}</span>
+          </div>
+          <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">
+            {c.text}
+          </p>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -147,6 +162,9 @@ export function IssueDetail({
   onClose: () => void;
 }) {
   const { data: issue, isLoading, error } = useIssue(id);
+  const { data: allIssues } = useIssues();
+  const [actor] = useActor();
+  const issues = allIssues ?? [];
   const open = id !== "";
 
   return (
@@ -176,36 +194,61 @@ export function IssueDetail({
         {error ? <p className="text-st-blocked">error: {error.message}</p> : null}
         {issue ? (
           <>
+            {actor ? null : (
+              <p className="mb-3 rounded-md border border-line bg-bg px-3 py-2 text-muted text-xs">
+                set your identity in the header (“acting as”) to edit beads.
+              </p>
+            )}
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={issue.status} />
-              <PriorityBadge priority={issue.priority} />
+              <StatusEditor issue={issue} actor={actor} issues={issues} />
+              <PriorityEditor issue={issue} actor={actor} issues={issues} />
               <TypeBadge type={issue.issue_type} />
             </div>
-            {issue.labels?.length ? (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {issue.labels.map((l) => (
-                  <LabelChip key={l} label={l} />
-                ))}
-              </div>
-            ) : null}
 
             <dl className="mt-4 grid grid-cols-2 gap-3">
-              <Meta label="Assignee" value={issue.assignee} />
-              <Meta label="Owner" value={issue.created_by ?? issue.owner} />
+              <Field label="Assignee">
+                <AssigneeEditor issue={issue} actor={actor} issues={issues} />
+              </Field>
+              <Meta label="Owner (read-only)" value={issue.created_by ?? issue.owner} />
               <Meta label="Created" value={fmt(issue.created_at)} />
               <Meta label="Updated" value={fmt(issue.updated_at)} />
               {issue.closed_at ? <Meta label="Closed" value={fmt(issue.closed_at)} /> : null}
             </dl>
 
-            <Section title="Description" body={issue.description} />
-            <Section title="Acceptance Criteria" body={issue.acceptance_criteria} />
-            <Section title="Notes" body={issue.notes} />
+            <LabelEditor issue={issue} actor={actor} issues={issues} />
+
+            <EditableText
+              issue={issue}
+              actor={actor}
+              issues={issues}
+              title="Description"
+              field="description"
+            />
+            <EditableText
+              issue={issue}
+              actor={actor}
+              issues={issues}
+              title="Acceptance Criteria"
+              field="acceptance"
+            />
+            <EditableText issue={issue} actor={actor} issues={issues} title="Notes" field="notes" />
             {issue.status === "closed" && issue.close_reason ? (
               <Section title="Close Reason" body={issue.close_reason} />
             ) : null}
 
             <Relations issue={issue} onSelect={onSelect} />
-            <Comments items={issue.comments} />
+            <DepAdder issue={issue} actor={actor} issues={issues} />
+
+            <section className="mt-5">
+              <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
+                Comments ({issue.comments?.length ?? 0})
+              </h4>
+              <CommentList items={issue.comments} />
+              <CommentForm issue={issue} actor={actor} issues={issues} />
+              <p className="mt-2 text-muted text-xs italic">
+                comments are add-only (bd has no edit/delete).
+              </p>
+            </section>
           </>
         ) : null}
       </div>
