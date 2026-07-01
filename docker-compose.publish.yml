@@ -1,0 +1,12 @@
+# Opt-in overlay that publishes the dolt DB port for remote bd clients.
+# Only use on the LAN server (behind the VPN). Set DOLT_ADDR to the interface
+# to bind (e.g. 0.0.0.0 or the LAN IP) and DOLT_PASSWORD for authn.
+#
+#   DOLT_ADDR=0.0.0.0 DOLT_PASSWORD=... \
+#     docker compose -f docker-compose.yml -f docker-compose.publish.yml up -d
+#
+# Never layer this on an untrusted network.
+services:
+  dolt:
+    ports:
+      - "${DOLT_ADDR:-0.0.0.0}:3307:3307"

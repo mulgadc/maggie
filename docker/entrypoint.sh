@@ -43,11 +43,20 @@ case "$role" in
     rm -rf "$DOLT_DATA"
     mkdir -p "$(dirname "$DOLT_DATA")"
     mv "$work/.beads/embeddeddolt" "$DOLT_DATA"
-    # The embedded import only grants root@localhost; add root@% so the maggie
-    # client can connect over the container network.
-    ( cd "$DOLT_DATA" && dolt sql -q \
-        "CREATE USER IF NOT EXISTS 'root'@'%'; GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;" )
-    echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT"
+    # The embedded import only grants root@localhost; add a network account so
+    # remote bd clients can connect. When DOLT_PASSWORD is set the account
+    # requires it (defence-in-depth on top of the VPN); otherwise it stays
+    # passwordless for local/dev use.
+    duser="${DOLT_USER:-root}"
+    if [ -n "${DOLT_PASSWORD:-}" ]; then
+      ( cd "$DOLT_DATA" && dolt sql -q \
+          "CREATE USER IF NOT EXISTS '$duser'@'%' IDENTIFIED BY '$DOLT_PASSWORD'; GRANT ALL PRIVILEGES ON *.* TO '$duser'@'%' WITH GRANT OPTION;" )
+      echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT (user $duser, password set)"
+    else
+      ( cd "$DOLT_DATA" && dolt sql -q \
+          "CREATE USER IF NOT EXISTS '$duser'@'%'; GRANT ALL PRIVILEGES ON *.* TO '$duser'@'%' WITH GRANT OPTION;" )
+      echo "seeded $DOLT_DATA/$BEADS_PREFIX from $SNAPSHOT (user $duser, no password)"
+    fi
     ;;
 
   maggie)
@@ -63,11 +72,15 @@ case "$role" in
     # Configure a server-mode client pointing at the dolt service, then serve.
     # --prefix targets the database the seed created so bd does not auto-create
     # a stray database named after the working directory.
+    # bd reads the dolt password from BEADS_DOLT_PASSWORD; empty means none.
+    duser="${DOLT_USER:-root}"
+    export BEADS_DOLT_PASSWORD="${DOLT_PASSWORD:-}"
     if [ ! -f "$CLIENT_DIR/.beads/metadata.json" ]; then
       mkdir -p "$CLIENT_DIR"
       git -C "$CLIENT_DIR" init -q
       ( cd "$CLIENT_DIR" && bd init --backend dolt --server \
-          --server-host "$DOLT_HOST" --server-port "$DOLT_PORT" --prefix "$BEADS_PREFIX" )
+          --server-host "$DOLT_HOST" --server-port "$DOLT_PORT" \
+          --server-user "$duser" --prefix "$BEADS_PREFIX" )
       ( cd "$CLIENT_DIR" && bd dolt set database "$BEADS_PREFIX" )
     fi
     export MAGGIE_BEADS_DIR="$CLIENT_DIR"
