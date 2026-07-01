@@ -68,6 +68,10 @@ export function fetchGraph(): Promise<Edge[]> {
   return getJSON<Edge[]>("/api/graph");
 }
 
+export function fetchActors(): Promise<string[]> {
+  return getJSON<string[]>("/api/actors");
+}
+
 export async function fetchIssue(id: string): Promise<Issue | undefined> {
   const arr = await getJSON<Issue[]>(`/api/issue?id=${encodeURIComponent(id)}`);
   return arr[0];

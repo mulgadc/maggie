@@ -16,7 +16,14 @@ import (
 	"time"
 
 	"github.com/mulgadc/maggie/internal/beads"
+	"github.com/mulgadc/maggie/internal/roster"
 )
+
+// fallbackActors seeds the identity picker when the GitHub org cannot be reached
+// (offline or no token), so writes always have a roster to pick from.
+var fallbackActors = []string{
+	"benduncan", "brynmailer-mdc", "joshsiv-mulga", "juliansommer", "tomnewton-mulga",
+}
 
 //go:embed web
 var webFS embed.FS
@@ -36,6 +43,7 @@ func main() {
 	bin := envOr("MAGGIE_BD_BIN", "bd")
 
 	bd := beads.New(bin, dir, 15*time.Second)
+	rf := roster.New(envOr("GITHUB_ORG", "mulgadc"), os.Getenv("GITHUB_TOKEN"), fallbackActors)
 
 	sub, err := fs.Sub(webFS, "web")
 	if err != nil {
@@ -58,6 +66,12 @@ func main() {
 		}
 		return bd.Show(r.Context(), id)
 	}))
+	mux.HandleFunc("/api/actors", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(rf.Members(r.Context())); err != nil {
+			slog.Error("actors encode", "err", err)
+		}
+	})
 	mux.HandleFunc("/api/issue/update", writeHandler(func(r *http.Request) (string, error) {
 		var b updateBody
 		if err := decode(r, &b); err != nil {

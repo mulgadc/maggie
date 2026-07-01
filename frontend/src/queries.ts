@@ -4,6 +4,7 @@ import type { DepType, Issue, UpdatePayload } from "@/api";
 import {
   addComment,
   addDep,
+  fetchActors,
   fetchGraph,
   fetchIssue,
   fetchIssues,
@@ -26,6 +27,14 @@ export function useReady() {
     queryKey: ["ready"],
     queryFn: fetchReady,
     refetchInterval: REFETCH_MS,
+  });
+}
+
+export function useActors() {
+  return useQuery({
+    queryKey: ["actors"],
+    queryFn: fetchActors,
+    staleTime: 30 * 60_000,
   });
 }
 

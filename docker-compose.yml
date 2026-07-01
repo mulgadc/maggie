@@ -27,6 +27,11 @@ services:
       # DOLT_USER=root to fall back to the full-privilege break-glass account.
       DOLT_USER: "${DOLT_USER:-beads}"
       DOLT_PASSWORD: "${DOLT_PASSWORD:-}"
+      # Identity roster for edits: members of this GitHub org seed the "acting as"
+      # picker. GITHUB_TOKEN (read:org PAT) is only needed to see private members;
+      # public members list without it. Falls back to a static list if offline.
+      GITHUB_ORG: "${GITHUB_ORG:-mulgadc}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
     ports:
       # Serve on host port 80 so the team can reach it by hostname (no :port).
       # Override with MAGGIE_PORT for local dev if 80 is taken.
