@@ -68,32 +68,31 @@ function DepList({
   if (!items?.length) {
     return null;
   }
-  const openItems = items.filter((d) => d.status !== "closed");
-  const hiddenClosed = items.length - openItems.length;
-  if (!openItems.length) {
-    return null;
-  }
+  // Show every link (open and closed); closed ones sort last and are dimmed so a
+  // closed parent/relation is still visible rather than hidden entirely.
+  const sorted = [...items].sort(
+    (a, b) => (a.status === "closed" ? 1 : 0) - (b.status === "closed" ? 1 : 0),
+  );
   return (
     <section className="mt-5">
       <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">
-        {title} ({openItems.length})
-        {hiddenClosed ? (
-          <span className="ml-2 font-normal lowercase tracking-normal">
-            +{hiddenClosed} closed hidden
-          </span>
-        ) : null}
+        {title} ({items.length})
       </h4>
       <ul className="flex flex-col gap-1">
-        {openItems.map((d) => (
+        {sorted.map((d) => (
           <li key={d.id}>
             <button
               type="button"
               onClick={() => onSelect(d.id)}
-              className="flex w-full items-center gap-2 rounded-md border border-line bg-bg px-2 py-1.5 text-left hover:border-accent"
+              className={`flex w-full items-center gap-2 rounded-md border border-line bg-bg px-2 py-1.5 text-left hover:border-accent ${
+                d.status === "closed" ? "opacity-55" : ""
+              }`}
             >
               <StatusDot status={d.status} />
               <span className="font-mono text-accent text-xs">{d.id}</span>
-              <span className="truncate text-sm">{d.title}</span>
+              <span className={`truncate text-sm ${d.status === "closed" ? "line-through" : ""}`}>
+                {d.title}
+              </span>
             </button>
           </li>
         ))}
@@ -102,8 +101,14 @@ function DepList({
   );
 }
 
-function byType(arr: DepRef[] | undefined, t: string): DepRef[] {
-  return (arr ?? []).filter((d) => (d.dependency_type ?? "blocks") === t);
+// Type aliases bd emits are folded into semantic buckets so every link renders.
+const PARENT_TYPES = ["parent-child", "parent-of"];
+const BLOCK_TYPES = ["blocks", "blocked-by"];
+const RELATED_TYPES = ["relates-to", "related", "discovered-from"];
+
+function byType(arr: DepRef[] | undefined, types: string[]): DepRef[] {
+  const set = new Set(types);
+  return (arr ?? []).filter((d) => set.has(d.dependency_type ?? "blocks"));
 }
 
 // dedupe relates-to: it is symmetric so the same ref shows in both arrays.
@@ -117,16 +122,16 @@ function dedupe(items: DepRef[]): DepRef[] {
 function Relations({ issue, onSelect }: { issue: Issue; onSelect: (id: string) => void }) {
   const deps = issue.dependencies;
   const dents = issue.dependents;
-  const related = dedupe([...byType(deps, "relates-to"), ...byType(dents, "relates-to")]);
+  const related = dedupe([...byType(deps, RELATED_TYPES), ...byType(dents, RELATED_TYPES)]);
   return (
     <>
-      <DepList title="Parent" items={byType(deps, "parent-child")} onSelect={onSelect} />
-      <DepList title="Children" items={byType(dents, "parent-child")} onSelect={onSelect} />
-      <DepList title="Blocked by" items={byType(deps, "blocks")} onSelect={onSelect} />
-      <DepList title="Blocks" items={byType(dents, "blocks")} onSelect={onSelect} />
+      <DepList title="Parent" items={byType(deps, PARENT_TYPES)} onSelect={onSelect} />
+      <DepList title="Children" items={byType(dents, PARENT_TYPES)} onSelect={onSelect} />
+      <DepList title="Blocked by" items={byType(deps, BLOCK_TYPES)} onSelect={onSelect} />
+      <DepList title="Blocks" items={byType(dents, BLOCK_TYPES)} onSelect={onSelect} />
       <DepList title="Related" items={related} onSelect={onSelect} />
-      <DepList title="Tracks" items={byType(deps, "tracks")} onSelect={onSelect} />
-      <DepList title="Tracked by" items={byType(dents, "tracks")} onSelect={onSelect} />
+      <DepList title="Tracks" items={byType(deps, ["tracks"])} onSelect={onSelect} />
+      <DepList title="Tracked by" items={byType(dents, ["tracks"])} onSelect={onSelect} />
     </>
   );
 }
