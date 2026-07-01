@@ -37,7 +37,6 @@ const TABS = [
   { to: "/", label: "Dashboard" },
   { to: "/table", label: "Table" },
   { to: "/board", label: "Board" },
-  { to: "/ready", label: "Ready" },
   { to: "/graph", label: "Graph" },
 ] as const;
 
