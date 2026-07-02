@@ -35,7 +35,7 @@ case "$role" in
     git -C "$work" commit -qm "seed snapshot"
     # bd 1.x imports into a database named after the prefix (here "$BEADS_PREFIX").
     # The maggie client connects to that same database name.
-    ( cd "$work" && bd init --backend dolt --from-jsonl --prefix "$BEADS_PREFIX" )
+    ( cd "$work" && bd init --backend dolt --from-jsonl --non-interactive --skip-agents --skip-hooks --prefix "$BEADS_PREFIX" )
     ( cd "$work" && bd stats | grep -iE 'Total Issues|Open|Closed|Ready' || true )
     # bd 1.x embeds dolt at .beads/embeddeddolt/<db>/.dolt — the embeddeddolt
     # directory is itself the dolt data-dir holding one database per prefix.
@@ -88,10 +88,9 @@ case "$role" in
     if [ ! -f "$CLIENT_DIR/.beads/metadata.json" ]; then
       mkdir -p "$CLIENT_DIR"
       git -C "$CLIENT_DIR" init -q
-      ( cd "$CLIENT_DIR" && bd init --backend dolt --server \
+      ( cd "$CLIENT_DIR" && bd init --backend dolt --server --non-interactive --skip-agents --skip-hooks \
           --server-host "$DOLT_HOST" --server-port "$DOLT_PORT" \
-          --server-user "$duser" --prefix "$BEADS_PREFIX" )
-      ( cd "$CLIENT_DIR" && bd dolt set database "$BEADS_PREFIX" )
+          --server-user "$duser" --database "$BEADS_PREFIX" --prefix "$BEADS_PREFIX" )
     fi
     export MAGGIE_BEADS_DIR="$CLIENT_DIR"
     export MAGGIE_BD_BIN=bd

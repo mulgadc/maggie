@@ -84,24 +84,26 @@ promoting that dolt server to the live, shared beads backend that every dev's
 authoritative import. `make docker-refresh` does the same stop/seed/start cycle
 for later refreshes before cutover is final.
 
-## Per-dev config (after cutover)
+## Per-dev setup (after cutover)
 
-Each dev, in their beads working dir. Use **your own prefix** (the shared db is
-`mulga`; the prefix only sets the ids of beads *you* create — e.g. `mulga-siv`,
-`mulga-js`, `mulga-bm`, `mulga-tn`):
+Each dev, from their `mulga` clone root:
 
 ```
-export BEADS_DOLT_PASSWORD='<strong-password>'   # add to your shell profile
-bd init --backend dolt --server \
-  --server-host banksia --server-port 3307 \
-  --server-user beads --prefix <your-prefix>
-bd dolt set database mulga
+export BEADS_DOLT_PASSWORD='<shared-password>'   # add to your shell profile
+./.beads/connect.sh
 ```
 
-Then stop using the local embedded/JSONL backend. Do **not** keep committing
-`.beads/issues.jsonl` — with a shared dolt server that is the source of truth
-JSONL becomes export-only. Running both invites split-brain. Confirm your
-`bd version` matches the server's (`v1.0.5`) first.
+`connect.sh` does the rest: upgrades bd to `v1.0.5` if needed, connects to the
+shared dolt server (`192.168.1.12:3307`, db `mulga`), pins `--database mulga` so a
+client attaches instead of trying to create, and smoke-tests. Everyone shares
+prefix `mulga` — bd 1.x ids are `mulga-<hash>`, unique without per-dev prefixes;
+ownership is the bead's assignee, not the id. It also hides the git origin during
+`bd init` so bd doesn't try to clone a bogus git-derived dolt remote (which would
+need the dolt CLI).
+
+After connecting, JSONL is export-only — do **not** commit `.beads/issues.jsonl`
+(running the embedded/JSONL backend alongside the server invites split-brain).
+Keep `bd version` at `v1.0.5`; a mismatch corrupts the shared schema.
 
 ## Backups
 

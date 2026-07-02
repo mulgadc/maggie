@@ -3,8 +3,9 @@
 Lightweight web UI for viewing and managing [Beads](https://github.com/steveyegge/beads)
 issues. Part of the Mulga stack.
 
-Reads come from the `bd` CLI (`bd ... --json`); writes (later) also go through
-`bd` so bead invariants stay intact. See [docs/plan.md](docs/plan.md).
+Reads come from the `bd` CLI (`bd ... --json`); writes (e.g. drag-and-drop status
+changes on the board) also go through `bd` so bead invariants stay intact.
+See [docs/plan.md](docs/plan.md).
 
 ## Stack
 
@@ -40,7 +41,7 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 ## Endpoints
 
-- `GET /` — SPA (table / board / ready / graph)
+- `GET /` — SPA (table / board / graph)
 - `GET /api/issues?status=&priority=&limit=&all=` — list issues
 - `GET /api/ready` — ready-to-work issues
 - `GET /api/issue?id=<id>` — issue detail
@@ -48,10 +49,11 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 ## Docker (portable maggie + dolt stack)
 
-Packages maggie, `bd`, and `dolt` into one image; compose runs a private dolt
-server plus the maggie web UI. Data is a **manual snapshot import** — no live
-mirror. The team keeps editing beads via git/JSONL as usual; this is a
-read-only viewer seeded on demand. Lifts to another host via the named volume.
+Packages maggie, `bd`, and `dolt` into one image; compose runs a dolt server plus
+the maggie web UI. Post-cutover this dolt server is the team's **live shared beads
+backend** (see [docs/cutover.md](docs/cutover.md)); maggie reads and writes it
+through `bd`. The snapshot-seed flow below stands up or re-seeds that server from
+an authoritative `issues.jsonl`. Lifts to another host via the named volume.
 
 ```bash
 # 1. drop a snapshot of the source-of-truth jsonl
