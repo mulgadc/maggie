@@ -17,7 +17,10 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$out"
 
 # bd export runs through the configured client and reads the live dolt server.
-docker compose exec -T maggie sh -c 'cd "$CLIENT_DIR" && bd export --all' >"$out/issues-$stamp.jsonl"
+# The entrypoint exports BEADS_DOLT_PASSWORD into its own process only, so an
+# exec'd shell has to take it from the container's DOLT_PASSWORD or bd is denied.
+docker compose exec -T maggie sh -c \
+	'cd "$CLIENT_DIR" && BEADS_DOLT_PASSWORD="$DOLT_PASSWORD" bd export --all' >"$out/issues-$stamp.jsonl"
 cp "$out/issues-$stamp.jsonl" "$out/issues.jsonl"
 echo "wrote $out/issues-$stamp.jsonl ($(wc -l <"$out/issues-$stamp.jsonl") issues)"
 
