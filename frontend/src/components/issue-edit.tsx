@@ -1,8 +1,9 @@
-import { Plus, X } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { Pencil, Plus, X } from "lucide-react";
+import { type MouseEvent, type ReactNode, useId, useState } from "react";
 
 import type { DepType, Issue, Status, UpdatePayload } from "@/api";
 import { LabelChip, PriorityBadge, StatusBadge } from "@/components/badges";
+import { Markdown } from "@/components/markdown";
 import { ALL_STATUSES, allLabels } from "@/lib/filter";
 import { cn } from "@/lib/utils";
 import { useActors, useAddComment, useAddDep, useUpdateIssue } from "@/queries";
@@ -88,6 +89,7 @@ function InlineText({
   multiline,
   disabled,
   suggestions,
+  label,
   onSave,
 }: {
   value: string;
@@ -95,6 +97,7 @@ function InlineText({
   multiline?: boolean;
   disabled: boolean;
   suggestions?: string[];
+  label?: string;
   onSave: (v: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -165,6 +168,50 @@ function InlineText({
   }
 
   const empty = !value.trim();
+
+  // Multiline read mode renders markdown, so it can't live inside a <button>
+  // (block elements/links inside a button are invalid and swallow clicks).
+  // Click-to-edit is a div handler that bails on links/code/selection; a
+  // hover/focus-revealed pencil button keeps editing reachable by keyboard.
+  if (multiline) {
+    if (disabled) {
+      return empty ? (
+        <span className="text-muted italic">{placeholder ?? "—"}</span>
+      ) : (
+        <Markdown text={value} />
+      );
+    }
+    const onClick = (e: MouseEvent<HTMLDivElement>) => {
+      if ((e.target as HTMLElement).closest("a, pre")) {
+        return;
+      }
+      if (window.getSelection()?.toString()) {
+        return;
+      }
+      start();
+    };
+    return (
+      <div
+        onClick={onClick}
+        className="group -mx-1 relative cursor-text rounded px-1 hover:bg-surface2/40"
+      >
+        {empty ? (
+          <span className="text-muted italic">{placeholder ?? "—"}</span>
+        ) : (
+          <Markdown text={value} />
+        )}
+        <button
+          type="button"
+          onClick={start}
+          aria-label={`edit ${label ?? "text"}`}
+          className="absolute top-0 right-0 hidden items-center gap-1 rounded bg-panel px-1 text-muted text-xs hover:text-text group-focus-within:flex group-hover:flex"
+        >
+          <Pencil size={12} /> edit
+        </button>
+      </div>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -179,9 +226,7 @@ function InlineText({
       {empty ? (
         <span className="text-muted italic">{placeholder ?? "—"}</span>
       ) : (
-        <span className={multiline ? "whitespace-pre-wrap break-words" : "break-words"}>
-          {value}
-        </span>
+        <span className="break-words">{value}</span>
       )}
     </button>
   );
@@ -246,6 +291,7 @@ export function EditableText({
           multiline
           disabled={disabled}
           placeholder="—"
+          label={title}
           onSave={(v) => patch({ [field]: v } as UpdatePayload)}
         />
       </div>

@@ -12,6 +12,7 @@ import {
   PriorityEditor,
   StatusEditor,
 } from "@/components/issue-edit";
+import { Markdown } from "@/components/markdown";
 import { useActor } from "@/lib/actor";
 import { useIssue, useIssues } from "@/queries";
 
@@ -51,7 +52,7 @@ function Section({ title, body }: { title: string; body?: string }) {
   return (
     <section className="mt-5">
       <h4 className="mb-1.5 font-semibold text-muted text-xs uppercase tracking-wider">{title}</h4>
-      <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">{body}</p>
+      <Markdown text={body} />
     </section>
   );
 }
@@ -148,9 +149,7 @@ function CommentList({ items }: { items?: Comment[] }) {
             <span className="font-medium text-text/80">{c.author ?? "unknown"}</span>
             <span>{fmt(c.created_at)}</span>
           </div>
-          <p className="whitespace-pre-wrap break-words text-sm text-text/90 leading-relaxed">
-            {c.text}
-          </p>
+          <Markdown text={c.text} />
         </li>
       ))}
     </ul>
