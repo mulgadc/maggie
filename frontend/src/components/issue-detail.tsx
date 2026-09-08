@@ -75,7 +75,7 @@ function DepList({
   }
   // Show every link (open and closed); closed ones sort last and are dimmed so a
   // closed parent/relation is still visible rather than hidden entirely.
-  const sorted = [...items].sort(
+  const sorted = items.toSorted(
     (a, b) => (a.status === "closed" ? 1 : 0) - (b.status === "closed" ? 1 : 0),
   )
   return (
@@ -319,4 +319,4 @@ export function IssueDetail({
   )
 }
 
-export type { Issue }
+export type { Issue } from "@/api"

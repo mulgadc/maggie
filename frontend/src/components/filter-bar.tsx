@@ -56,6 +56,13 @@ function StatusChips({
   )
 }
 
+// toGroupMode narrows a raw <select> value without asserting its type.
+function toGroupMode(v: string): GroupMode {
+  return GROUP_MODES.find((m) => m === v) ?? "none"
+}
+
+const GROUP_MODES: GroupMode[] = ["none", "epic", "label"]
+
 export function FilterBar({
   filters,
   onChange,
@@ -68,7 +75,8 @@ export function FilterBar({
   onGroupMode?: (m: GroupMode) => void
 }) {
   const { data: issues } = useIssues()
-  const all = issues ?? []
+  // Memoised so the derived lists below keep a stable dependency.
+  const all = useMemo(() => issues ?? [], [issues])
   const types = useMemo(() => uniqueSorted(all.map((i) => i.issue_type)), [all])
   const assignees = useMemo(
     () => uniqueSorted(all.map((i) => i.assignee)),
@@ -177,7 +185,7 @@ export function FilterBar({
             className={`${FIELD} ml-auto`}
             value={groupMode ?? "none"}
             onChange={(e) => {
-              onGroupMode(e.target.value as GroupMode)
+              onGroupMode(toGroupMode(e.target.value))
             }}
           >
             <option value="none">group: none</option>

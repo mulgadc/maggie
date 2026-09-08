@@ -8,15 +8,22 @@ export const ALL_STATUSES: Status[] = [
   "closed",
 ]
 
+// An "all" value for priority, type, assignee or label means "no filter".
 export interface Filters {
-  text: string // matches id or title (substring, case-insensitive)
-  idGlob: string // glob on id, e.g. "mulga-siv-*"
-  statuses: Status[] // included statuses; full set = no filter
+  // matches id or title (substring, case-insensitive)
+  text: string
+  // glob on id, e.g. "mulga-siv-*"
+  idGlob: string
+  // included statuses; full set = no filter
+  statuses: Status[]
   priority: number | "all"
-  type: string | "all"
-  assignee: string | "all"
-  label: string | "all" // issue must carry this label
+  type: string
+  assignee: string
+  // issue must carry this label
+  label: string
 }
+
+const STATUS_SET = new Set<string>(ALL_STATUSES)
 
 export const EMPTY_FILTERS: Filters = {
   text: "",
@@ -96,19 +103,19 @@ function cmp(a: Issue, b: Issue, key: SortKey): number {
   if (key === "priority") {
     return a.priority - b.priority
   }
-  const av = String(a[key] ?? "")
-  const bv = String(b[key] ?? "")
+  const av = a[key] ?? ""
+  const bv = b[key] ?? ""
   return av.localeCompare(bv)
 }
 
 export function sortIssues(issues: Issue[], s: Sort): Issue[] {
-  const sorted = [...issues].sort((a, b) => cmp(a, b, s.key))
-  return s.dir === "asc" ? sorted : sorted.reverse()
+  const sorted = issues.toSorted((a, b) => cmp(a, b, s.key))
+  return s.dir === "asc" ? sorted : sorted.toReversed()
 }
 
 export const DEFAULT_SORT: Sort = { key: "priority", dir: "asc" }
 
-const SORT_KEYS: SortKey[] = new Set([
+const SORT_KEYS = new Set<SortKey>([
   "id",
   "title",
   "status",
@@ -124,21 +131,22 @@ const SORT_KEYS: SortKey[] = new Set([
 export interface TableSearch {
   q?: string
   idg?: string
-  st?: string // comma-separated statuses; absent = all
+  // comma-separated statuses; absent = all
+  st?: string
   pri?: number
   type?: string
   asgn?: string
-  lbl?: string // filter to a single label
+  // filter to a single label
+  lbl?: string
   sort?: SortKey
   dir?: "asc" | "desc"
-  group?: GroupMode // group table rows by epic or label
+  // group table rows by epic or label
+  group?: GroupMode
 }
 
 export function paramsToFilters(s: TableSearch): Filters {
   const sts = s.st
-    ? s.st
-        .split(",")
-        .filter((v): v is Status => ALL_STATUSES.includes(v as Status))
+    ? s.st.split(",").filter((v): v is Status => STATUS_SET.has(v))
     : [...ALL_STATUSES]
   return {
     text: s.q ?? "",
@@ -184,7 +192,7 @@ export function sortToParams(s: Sort): TableSearch {
 }
 
 export function uniqueSorted(values: (string | undefined)[]): string[] {
-  return [...new Set(values.filter((v): v is string => !!v))].sort((a, b) =>
+  return [...new Set(values.filter((v): v is string => !!v))].toSorted((a, b) =>
     a.localeCompare(b),
   )
 }
@@ -244,7 +252,8 @@ export function buildGroups(rows: Issue[]): GroupNode[] {
 }
 
 export interface LabelGroup {
-  label: string // "" denotes the unlabeled bucket
+  // "" denotes the unlabeled bucket
+  label: string
   issues: Issue[]
 }
 
@@ -271,7 +280,7 @@ export function buildLabelGroups(rows: Issue[]): LabelGroup[] {
     }
   }
   const groups: LabelGroup[] = [...byLabel.keys()]
-    .sort((a, b) => a.localeCompare(b))
+    .toSorted((a, b) => a.localeCompare(b))
     .map((label) => ({ label, issues: byLabel.get(label) ?? [] }))
   if (unlabeled.length) {
     groups.push({ label: "", issues: unlabeled })

@@ -1,7 +1,7 @@
 import { Pencil, Plus, X } from "lucide-react"
 import { type MouseEvent, type ReactNode, useId, useState } from "react"
 
-import type { DepType, Issue, Status, UpdatePayload } from "@/api"
+import type { DepType, Issue, UpdatePayload } from "@/api"
 import { LabelChip, PriorityBadge, StatusBadge } from "@/components/badges"
 import { Markdown } from "@/components/markdown"
 import { ALL_STATUSES, allLabels } from "@/lib/filter"
@@ -167,7 +167,9 @@ function InlineText({
         {suggestions ? (
           <datalist id={listId}>
             {suggestions.map((s) => (
-              <option key={s} value={s} />
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </datalist>
         ) : null}
@@ -190,7 +192,8 @@ function InlineText({
       )
     }
     const onClick = (e: MouseEvent<HTMLDivElement>) => {
-      if ((e.target as HTMLElement).closest("a, pre")) {
+      const { target } = e
+      if (target instanceof HTMLElement && target.closest("a, pre")) {
         return
       }
       if (window.getSelection()?.toString()) {
@@ -199,6 +202,8 @@ function InlineText({
       start()
     }
     return (
+      // The hover/focus pencil button below is the keyboard path into editing.
+      // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- markdown cannot nest in a button
       <div
         onClick={onClick}
         className="group relative -mx-1 cursor-text rounded px-1 hover:bg-surface2/40"
@@ -247,7 +252,10 @@ export function StatusEditor({ issue, actor }: Ctx) {
       value={issue.status}
       disabled={disabled}
       onChange={(v) => {
-        patch({ status: v as Status })
+        const status = ALL_STATUSES.find((s) => s === v)
+        if (status) {
+          patch({ status })
+        }
       }}
       options={ALL_STATUSES.map((s) => ({
         value: s,
@@ -316,7 +324,7 @@ export function EditableText({
           placeholder="—"
           label={title}
           onSave={(v) => {
-            patch({ [field]: v } as UpdatePayload)
+            patch({ [field]: v })
           }}
         />
       </div>
@@ -338,6 +346,52 @@ export function LabelEditor({ issue, actor, issues }: Ctx) {
     setDraft("")
     setAdding(false)
   }
+  let adder: ReactNode = null
+  if (!disabled) {
+    adder = adding ? (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          add()
+        }}
+      >
+        <input
+          // biome-ignore lint/a11y: transient inline editor
+          autoFocus
+          list={listId}
+          className={`${INPUT} w-32`}
+          value={draft}
+          placeholder="label"
+          onChange={(e) => {
+            setDraft(e.target.value)
+          }}
+          onBlur={add}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              setAdding(false)
+            }
+          }}
+        />
+        <datalist id={listId}>
+          {allLabels(issues).map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </datalist>
+      </form>
+    ) : (
+      <button
+        type="button"
+        onClick={() => {
+          setAdding(true)
+        }}
+        className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-line px-2 py-0.5 text-xs text-muted hover:border-accent hover:text-text"
+      >
+        <Plus size={11} /> label
+      </button>
+    )
+  }
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
       {labels.map((l) => (
@@ -357,43 +411,7 @@ export function LabelEditor({ issue, actor, issues }: Ctx) {
           )}
         </span>
       ))}
-      {disabled ? null : adding ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            add()
-          }}
-        >
-          <input
-            // biome-ignore lint/a11y: transient inline editor
-            autoFocus
-            list={listId}
-            className={`${INPUT} w-32`}
-            value={draft}
-            placeholder="label"
-            onChange={(e) => {
-              setDraft(e.target.value)
-            }}
-            onBlur={add}
-            onKeyDown={(e) => e.key === "Escape" && setAdding(false)}
-          />
-          <datalist id={listId}>
-            {allLabels(issues).map((l) => (
-              <option key={l} value={l} />
-            ))}
-          </datalist>
-        </form>
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setAdding(true)
-          }}
-          className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-line px-2 py-0.5 text-xs text-muted hover:border-accent hover:text-text"
-        >
-          <Plus size={11} /> label
-        </button>
-      )}
+      {adder}
     </div>
   )
 }
@@ -448,7 +466,10 @@ export function DepAdder({ issue, actor, issues }: Ctx) {
         value={type}
         disabled={disabled}
         onChange={(e) => {
-          setType(e.target.value as DepType)
+          const next = DEP_TYPES.find((d) => d.value === e.target.value)
+          if (next) {
+            setType(next.value)
+          }
         }}
       >
         {DEP_TYPES.map((d) => (

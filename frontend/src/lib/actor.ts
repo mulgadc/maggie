@@ -22,6 +22,8 @@ function write(v: string) {
   }
 }
 
+// useSyncExternalStore hands us a plain callback to invoke on every change.
+// oxlint-disable-next-line promise/prefer-await-to-callbacks -- required by the React store API
 function subscribe(cb: () => void): () => void {
   listeners.add(cb)
   return () => listeners.delete(cb)

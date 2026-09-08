@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react"
+import { createContext, type ReactNode, useContext } from "react"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkBreaks from "remark-breaks"
 import remarkGfm from "remark-gfm"
@@ -11,6 +11,25 @@ const InPreContext = createContext(false)
 // (muted uppercase) in the hierarchy: brighter but normal case.
 const HEADING1 = "mt-4 mb-1 first:mt-0 font-semibold text-text text-sm"
 const HEADING2 = "mt-3 mb-1 first:mt-0 font-semibold text-text/80 text-xs"
+
+// Fenced blocks render raw; inline code keeps the chip styling.
+function CodeSpan({
+  children,
+  className,
+}: {
+  children?: ReactNode
+  className?: string
+}) {
+  const inPre = useContext(InPreContext)
+  if (inPre) {
+    return <code className={className}>{children}</code>
+  }
+  return (
+    <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-[0.85em]">
+      {children}
+    </code>
+  )
+}
 
 const components: Components = {
   h1: ({ children }) => <h1 className={HEADING1}>{children}</h1>,
@@ -34,17 +53,7 @@ const components: Components = {
       </pre>
     </InPreContext.Provider>
   ),
-  code: ({ children, className }) => {
-    const inPre = useContext(InPreContext)
-    if (inPre) {
-      return <code className={className}>{children}</code>
-    }
-    return (
-      <code className="rounded bg-surface2 px-1 py-0.5 font-mono text-[0.85em]">
-        {children}
-      </code>
-    )
-  },
+  code: CodeSpan,
   a: ({ children, href }) => (
     <a
       href={href}

@@ -49,7 +49,7 @@ export function useGraph() {
 export function useIssue(id: string) {
   return useQuery({
     queryKey: ["issue", id],
-    queryFn: async () => fetchIssue(id),
+    queryFn: async () => await fetchIssue(id),
     enabled: id !== "",
   })
 }
@@ -63,10 +63,10 @@ function useIssueWrites() {
     if (fresh) {
       qc.setQueryData(["issue", id], fresh)
     }
-    qc.invalidateQueries({ queryKey: ["issues"] })
-    qc.invalidateQueries({ queryKey: ["ready"] })
-    qc.invalidateQueries({ queryKey: ["graph"] })
-    qc.invalidateQueries({ queryKey: ["issue", id] })
+    void qc.invalidateQueries({ queryKey: ["issues"] })
+    void qc.invalidateQueries({ queryKey: ["ready"] })
+    void qc.invalidateQueries({ queryKey: ["graph"] })
+    void qc.invalidateQueries({ queryKey: ["issue", id] })
   }
   return { settle }
 }
@@ -78,7 +78,7 @@ export function useUpdateIssue() {
       id: string
       actor: string
       patch: UpdatePayload
-    }) => updateIssue(v.id, v.actor, v.patch),
+    }) => await updateIssue(v.id, v.actor, v.patch),
     onSuccess: (fresh, v) => {
       settle(fresh, v.id)
     },
@@ -89,7 +89,7 @@ export function useAddComment() {
   const { settle } = useIssueWrites()
   return useMutation({
     mutationFn: async (v: { id: string; actor: string; text: string }) =>
-      addComment(v.id, v.actor, v.text),
+      await addComment(v.id, v.actor, v.text),
     onSuccess: (fresh, v) => {
       settle(fresh, v.id)
     },
@@ -104,7 +104,7 @@ export function useAddDep() {
       actor: string
       dependsOn: string
       type: DepType
-    }) => addDep(v.id, v.actor, v.dependsOn, v.type),
+    }) => await addDep(v.id, v.actor, v.dependsOn, v.type),
     onSuccess: (fresh, v) => {
       settle(fresh, v.id)
     },

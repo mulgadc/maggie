@@ -53,23 +53,25 @@ async function getJSON<T>(path: string): Promise<T> {
   if (!res.ok) {
     throw new Error(`${path} -> ${res.status}`)
   }
+  // The caller names the response shape, and a non-ok status is handled above.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- res.json() returns Promise<any>
   return await (res.json() as Promise<T>)
 }
 
 export async function fetchIssues(): Promise<Issue[]> {
-  return getJSON<Issue[]>("/api/issues?all=true&limit=100000")
+  return await getJSON<Issue[]>("/api/issues?all=true&limit=100000")
 }
 
 export async function fetchReady(): Promise<Issue[]> {
-  return getJSON<Issue[]>("/api/ready")
+  return await getJSON<Issue[]>("/api/ready")
 }
 
 export async function fetchGraph(): Promise<Edge[]> {
-  return getJSON<Edge[]>("/api/graph")
+  return await getJSON<Edge[]>("/api/graph")
 }
 
 export async function fetchActors(): Promise<string[]> {
-  return getJSON<string[]>("/api/actors")
+  return await getJSON<string[]>("/api/actors")
 }
 
 export async function fetchIssue(id: string): Promise<Issue | undefined> {
@@ -77,7 +79,18 @@ export async function fetchIssue(id: string): Promise<Issue | undefined> {
   return arr[0]
 }
 
-async function postJSON<T>(path: string, body: unknown): Promise<T> {
+// Every write endpoint is addressed by issue id and attributed to an actor; the
+// rest of the body is the per-endpoint payload.
+type PostBody = { id: string; actor: string } & (
+  | UpdatePayload
+  | { text: string }
+  | { depends_on: string; type: DepType }
+)
+
+async function postJSON(
+  path: string,
+  body: PostBody,
+): Promise<Issue | undefined> {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -89,10 +102,13 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
     )
   }
   if (res.status === 204) {
-    return undefined as T
+    return undefined
   }
+  // Every write replies with the refreshed issue, and a non-ok status is
+  // handled above.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- res.json() returns Promise<any>
   const arr = (await res.json()) as Issue[]
-  return arr[0] as T
+  return arr[0]
 }
 
 // UpdatePayload mirrors the backend: absent fields are omitted (left unchanged);
@@ -113,7 +129,7 @@ export async function updateIssue(
   actor: string,
   patch: UpdatePayload,
 ): Promise<Issue | undefined> {
-  return postJSON("/api/issue/update", { id, actor, ...patch })
+  return await postJSON("/api/issue/update", { id, actor, ...patch })
 }
 
 export async function addComment(
@@ -121,7 +137,7 @@ export async function addComment(
   actor: string,
   text: string,
 ): Promise<Issue | undefined> {
-  return postJSON("/api/issue/comment", { id, actor, text })
+  return await postJSON("/api/issue/comment", { id, actor, text })
 }
 
 export type DepType = "blocks" | "relates-to" | "parent"
@@ -132,5 +148,5 @@ export async function addDep(
   dependsOn: string,
   type: DepType,
 ): Promise<Issue | undefined> {
-  return postJSON("/api/issue/dep", { id, actor, depends_on: dependsOn, type })
+  return await postJSON("/api/issue/dep", { id, actor, depends_on: dependsOn, type })
 }

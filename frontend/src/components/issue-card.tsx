@@ -4,13 +4,13 @@ import type { Issue, Status } from "@/api"
 import { LabelChip, PriorityBadge, StatusBadge } from "@/components/badges"
 import { cn } from "@/lib/utils"
 
-const STATUS_BORDER: Record<Status, string> = {
+const STATUS_BORDER = {
   open: "border-l-st-open",
   in_progress: "border-l-st-in_progress",
   blocked: "border-l-st-blocked",
   deferred: "border-l-st-deferred",
   closed: "border-l-st-closed",
-}
+} satisfies Record<Status, string>
 
 export function IssueCard({
   issue,

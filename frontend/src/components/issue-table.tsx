@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react"
-import { useState } from "react"
+import { type ReactNode, useState } from "react"
 
 import type { Issue } from "@/api"
 import {
@@ -110,9 +110,65 @@ export function IssueTable({
   const toggleEpic = (id: string) => {
     setOpen((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
       return next
     })
+  }
+
+  let body: ReactNode
+  if (labelGroups) {
+    body = labelGroups.map((g) => (
+      <LabelSection
+        key={g.label || "__unlabeled"}
+        group={g}
+        expanded={open.has(`lbl:${g.label}`)}
+        onToggle={() => {
+          toggleEpic(`lbl:${g.label}`)
+        }}
+        onSelect={onSelect}
+      />
+    ))
+  } else if (groups) {
+    body = groups.map((g) =>
+      g.kind === "loose" ? (
+        <tr
+          key={g.issue.id}
+          onClick={() => {
+            onSelect(g.issue.id)
+          }}
+          className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
+        >
+          <Cells i={g.issue} />
+        </tr>
+      ) : (
+        <EpicGroup
+          key={g.issue.id}
+          epic={g.issue}
+          kids={g.children}
+          expanded={open.has(g.issue.id)}
+          onToggle={() => {
+            toggleEpic(g.issue.id)
+          }}
+          onSelect={onSelect}
+        />
+      ),
+    )
+  } else {
+    body = rows.map((i) => (
+      <tr
+        key={i.id}
+        onClick={() => {
+          onSelect(i.id)
+        }}
+        className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
+      >
+        <Cells i={i} />
+      </tr>
+    ))
   }
 
   return (
@@ -133,71 +189,20 @@ export function IssueTable({
                   className="inline-flex items-center gap-1 hover:text-text"
                 >
                   {c.label}
-                  {sort.key === c.key ? (
-                    sort.dir === "asc" ? (
-                      <ArrowUp size={12} />
-                    ) : (
-                      <ArrowDown size={12} />
-                    )
-                  ) : null}
+                  {sort.key === c.key ? <SortArrow dir={sort.dir} /> : null}
                 </button>
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
-          {labelGroups
-            ? labelGroups.map((g) => (
-                <LabelSection
-                  key={g.label || "__unlabeled"}
-                  group={g}
-                  expanded={open.has(`lbl:${g.label}`)}
-                  onToggle={() => {
-                    toggleEpic(`lbl:${g.label}`)
-                  }}
-                  onSelect={onSelect}
-                />
-              ))
-            : groups
-              ? groups.map((g) =>
-                  g.kind === "loose" ? (
-                    <tr
-                      key={g.issue.id}
-                      onClick={() => {
-                        onSelect(g.issue.id)
-                      }}
-                      className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
-                    >
-                      <Cells i={g.issue} />
-                    </tr>
-                  ) : (
-                    <EpicGroup
-                      key={g.issue.id}
-                      epic={g.issue}
-                      kids={g.children}
-                      expanded={open.has(g.issue.id)}
-                      onToggle={() => {
-                        toggleEpic(g.issue.id)
-                      }}
-                      onSelect={onSelect}
-                    />
-                  ),
-                )
-              : rows.map((i) => (
-                  <tr
-                    key={i.id}
-                    onClick={() => {
-                      onSelect(i.id)
-                    }}
-                    className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
-                  >
-                    <Cells i={i} />
-                  </tr>
-                ))}
-        </tbody>
+        <tbody>{body}</tbody>
       </table>
     </div>
   )
+}
+
+function SortArrow({ dir }: { dir: "asc" | "desc" }) {
+  return dir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />
 }
 
 function EpicGroup({

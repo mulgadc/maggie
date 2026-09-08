@@ -1,17 +1,18 @@
-import type { Edge, Issue } from "@/api"
+import type { Edge, Issue, Status } from "@/api"
 
 // Only actionable statuses take part in a work sequence; closed/deferred drop
 // out. Lower rank = pick sooner.
-const STATUS_RANK: Record<string, number> = {
-  in_progress: 0,
-  open: 1,
-  blocked: 2,
-}
+const STATUS_RANK = new Map<Status, number>([
+  ["in_progress", 0],
+  ["open", 1],
+  ["blocked", 2],
+])
 
 function less(a: number[], b: number[]): boolean {
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return a[i] < b[i]
+  for (const [i, av] of a.entries()) {
+    const bv = b[i] ?? 0
+    if (av !== bv) {
+      return av < bv
     }
   }
   return false
@@ -27,7 +28,7 @@ export function suggestSequence(
   edges: Edge[],
   limit = 16,
 ): Issue[] {
-  const actionable = issues.filter((i) => STATUS_RANK[i.status] !== undefined)
+  const actionable = issues.filter((i) => STATUS_RANK.has(i.status))
   const inSet = new Set(actionable.map((i) => i.id))
   const byId = new Map(actionable.map((i) => [i.id, i]))
 
@@ -60,6 +61,7 @@ export function suggestSequence(
     const pool = [...remaining].filter((id) => !blocked(id))
     // Fall back to everything left if a cycle leaves nothing unblocked.
     const candidates = pool.length ? pool : [...remaining]
+    const prev = prevLabels
     let best: string | null = null
     let bestKey: number[] | null = null
     for (const id of candidates) {
@@ -67,10 +69,10 @@ export function suggestSequence(
       if (!i) {
         continue
       }
-      const affinity = (i.labels ?? []).some((l) => prevLabels.has(l)) ? 0 : 1
+      const affinity = (i.labels ?? []).some((l) => prev.has(l)) ? 0 : 1
       const updated = Date.parse(i.updated_at ?? "")
       const key = [
-        STATUS_RANK[i.status] ?? 3,
+        STATUS_RANK.get(i.status) ?? 3,
         i.priority,
         affinity,
         Number.isNaN(updated) ? 0 : -updated,
@@ -86,7 +88,7 @@ export function suggestSequence(
     const picked = byId.get(best)
     if (picked) {
       order.push(picked)
-      prevLabels = new Set(picked.labels ?? [])
+      prevLabels = new Set(picked.labels)
     }
     remaining.delete(best)
     done.add(best)
