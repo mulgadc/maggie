@@ -96,6 +96,9 @@ All configuration is environment variables. There is no config file.
 | `MAGGIE_BEADS_DIR` | `.` | Working directory containing `.beads/` |
 | `MAGGIE_BD_BIN` | `bd` | Path to the `bd` binary |
 | `MAGGIE_ACTORS` | — | Comma-separated identity roster for the edit picker |
+| `MAGGIE_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
+
+Logs are JSON on stdout. An unusable `MAGGIE_LOG_LEVEL` is a startup error rather than a silent fall back, so a typo cannot leave a deployment quietly logging at the wrong verbosity.
 
 Edits are attributed with `bd --actor`. Maggie has no login, so the identity is self-asserted: pick one from the `MAGGIE_ACTORS` roster or type your own. Leaving the roster unset just means everyone types a name.
 

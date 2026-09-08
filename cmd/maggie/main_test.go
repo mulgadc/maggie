@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -540,6 +541,58 @@ func TestSPAHandlerCacheControl(t *testing.T) {
 				t.Errorf("Cache-Control = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSetupLogging(t *testing.T) {
+	// SetDefault is process-wide, so restore whatever the suite started with.
+	original := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(original) })
+
+	tests := []struct {
+		name    string
+		level   string
+		wantErr bool
+	}{
+		{"lowercase", "debug", false},
+		{"uppercase", "WARN", false},
+		{"offset", "info+2", false},
+		{"nonsense is rejected", "chatty", true},
+		{"empty is rejected", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := setupLogging(io.Discard, tt.level)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("setupLogging(%q) error = %v, wantErr %v", tt.level, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// The other mulga services log JSON; slog's default text handler would break a
+// shipper that parses maggie's output alongside theirs.
+func TestSetupLoggingEmitsJSONAtTheChosenLevel(t *testing.T) {
+	original := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(original) })
+
+	var out strings.Builder
+	if err := setupLogging(&out, "warn"); err != nil {
+		t.Fatalf("setupLogging: %v", err)
+	}
+	slog.Info("dropped below the threshold")
+	slog.Warn("kept", "addr", ":8088")
+
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want 1 — the level was not applied:\n%s", len(lines), out.String())
+	}
+	var rec map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &rec); err != nil {
+		t.Fatalf("log line is not JSON: %v\n%s", err, lines[0])
+	}
+	if rec["msg"] != "kept" || rec["addr"] != ":8088" {
+		t.Errorf("record = %v, want msg=kept addr=:8088", rec)
 	}
 }
 

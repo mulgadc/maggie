@@ -48,6 +48,11 @@ func main() {
 		return
 	}
 
+	if err := setupLogging(os.Stdout, envOr("MAGGIE_LOG_LEVEL", "info")); err != nil {
+		fmt.Fprintln(os.Stderr, "maggie:", err)
+		os.Exit(1)
+	}
+
 	addr := envOr("MAGGIE_ADDR", ":8088")
 	dir := envOr("MAGGIE_BEADS_DIR", ".")
 	bin := envOr("MAGGIE_BD_BIN", "bd")
@@ -70,6 +75,20 @@ func main() {
 		slog.Error("serve", "err", err)
 		os.Exit(1)
 	}
+}
+
+// setupLogging installs the process logger: JSON on stdout, matching the other
+// mulga services so journald and log shippers get structured records rather than
+// slog's default text. name is a level (debug|info|warn|error, case-insensitive,
+// with slog's +/-N offsets); an unusable one is a startup error rather than a
+// silent fall back to info, which would hide a misconfigured deployment.
+func setupLogging(w io.Writer, name string) error {
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(name)); err != nil {
+		return fmt.Errorf("MAGGIE_LOG_LEVEL %q: %w", name, err)
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level})))
+	return nil
 }
 
 // bdTimeout caps a single bd invocation. The server's WriteTimeout is derived
