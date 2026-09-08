@@ -25,8 +25,8 @@ body:
     id: version
     attributes:
       label: Maggie version
-      description: The commit SHA you are on, or the image tag if you are running the container.
-      placeholder: commit abc1234, or ghcr.io/mulgadc/maggie:v1.0.0
+      description: The commit SHA you are running (`git rev-parse --short HEAD`).
+      placeholder: commit abc1234
     validations:
       required: true
 

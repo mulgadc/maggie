@@ -1,76 +1,178 @@
-# Maggie
+<p align="center">
+  <img
+      src=".github/assets/banner.svg"
+      alt="Maggie by Mulga — a lightweight web UI for Beads issue tracking, with table, board and dependency graph views, and every write going through the bd CLI."
+      width="900"
+  >
+</p>
 
-Lightweight web UI for viewing and managing [Beads](https://github.com/steveyegge/beads) issues. Part of the Mulga stack.
+<p align="center">
+  <a href="https://go.dev"><img src="https://img.shields.io/badge/Go-1.27+-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-3fb950?style=flat-square" alt="License"></a>
+  <a href="https://mulgadc.com"><img src="https://img.shields.io/badge/Home-mulga-orange?style=flat-square&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9IiNmZmYiIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTE2LjcxOCA4Ljg5MWMtMS4yODUgMS4zNy0zLjE3OCAyLjMxNy00LjY5NSAzLjQ0LS44NTQuNjMtMy4wODkgMi4yNy0xLjYxIDMuMzQ0IDEuNzg4IDEuMjk4IDYuMjQzLjE2NCA3Ljc4NS0xLjI2Ljg0LS43NzUuODE0LTEuODIyLS4zMjgtMi4yNTktMS4yMzUtLjQ3Mi0yLjY2LS4xMTEtMy45MTMuMDg3LS4wNDIuMDA3LS4xMzEuMDU1LS4xMjMtLjAyLjUyMy0uMzM2Ljk5My0uNzUgMS41MDMtMS4xMDIuNDkyLS4zNCAxLjA5Ny0uODI3IDEuNy0uODM4IDEuODcxLS4wMzQgMy43OTkuODkgNC4yODcgMi44MTUuODExIDMuMjAzLTMuMDA2IDUuNzE1LTUuNzg0IDUuOTQybDEuNjE0LS43NDdjLjYwNS0uMzYgMS4yMTctLjczNCAxLjc1Mi0xLjE5Ni4xMzMtLjExNS4yMy0uMjYzLjM0Mi0uMzczLjAyNy0uMDI2LjMwMi0uMTQ0LjE0NC0uMTUtMS40NDEuOTQ1LTMuMTI3IDEuNTcyLTQuODEzIDEuOTMyLS41OC4xMjMtMS4xOTUuMjQyLTEuNzg1LjI1Ny4wMTUuMDguMDg3LjA2NC4xNC4wOC40NzYuMTU0IDEuMDIuMjQ1IDEuNTE2LjMyLjA2OC4wNTItLjAwNi4wNzQtLjA2LjA4MS0uNDQ4LjA1OC0uOTIzLjE0My0xLjM3LjE2Ni0xLjI3LjA2NC0yLjU1LS4wNjgtMy43NzctLjM4bC0uNjktMS45NTdjLS4wNi4wMDYtLjA2My4wNi0uMDc5LjEwMy0uMDYuMTctLjMwNSAxLjQxNy0uMzg3IDEuNDM1LS42Ni0uMi0xLjI1MS0uNjQ3LTEuNzM2LTEuMTMybDEuMTUtMi4wNi0xLjgzNSAxLjAxMWMtLjI1OC0uNTgzLS4zMDUtMS4yNDMtLjIxOS0xLjg3bDIuMzc1LTEuMThjLS43MzktLjA0OS0xLjQ4Ni4wNjgtMi4yMi4xNDUuMTI1LS4zNi4yNzctLjcxOC40NjItMS4wNTEuMDY3LS4xMjIuNDI2LS43MjEuNTItLjcyNC44Ni4xNjQgMS43ODYuMjQxIDIuNjQ4LjA3NGwtMS44Ny0uNzcxLS4wNjktLjA5M2MuMzgyLS4zNi43Ny0uNzE3IDEuMTk5LTEuMDI0LjgwNC4yMzQgMS42My40MjIgMi40NzMuNDMzTDkuMzUgOS4zNDJhNyA3IDAgMCAxIC41NjctLjQwMWMuMTYtLjEwMy42MDktLjQwMi43NzItLjM4LjY1LjIyMSAxLjMyNC4zNzggMi4wMS40MzMtLjMxMy0uMzI1LS45MDktLjU2NC0xLjIxLS44NjgtLjAzMy0uMDM0LS4wNTgtLjAzNi0uMDQzLS4wOTguNzg3LS40NTIgMS42NjItLjkwMSAyLjM0LTEuNTE3LjY5LS42MjkgMS40MjEtMS42NTYuOTI0LTIuNjA1LjU3My4xODIgMS4wNjcuOTA2IDEuMDU0IDEuNTEyLS4wMzQgMS42NzYtMS44MjIgMy4xNy0yLjk0MyA0LjIyMiAxLjczMi0uNzI4IDMuNzE0LTIuMjMgMy43MS00LjMwNS0uMDAzLTEuNjg4LTEuNTQtMi4zNjUtMi45OTMtMi41MThhMy4yIDMuMiAwIDAgMS0uMzg1IDEuMDg3Yy0uNDI4LjcxOS0xLjMwMiAxLjE2OC0xLjc1OCAxLjkxNS0uMzExLjUxLS4zNyAxLjE5NS0xLjAzMSAxLjM5LS4yNy4wOC0uNjE3LjA5My0uODk3LjA5NGwuNjE1LS4zMjVjLjY4OS0uNTA2LjY3Ny0xLjQyIDEuMDk5LTIuMS0uMDUtLjA3LS41NDUtLjItLjY2LS4yMjktLjUxLS4xMjUtMS4zNzUtLjI4NS0xLjg4Ni0uMjUtLjE1Ny4wMS0uODY5LjEyMS0uOTMuMjQyLS4wODguMTc3LjM0MS45My40NjggMS4xMDEuMDI1LjAzNS4wNzcuMDI2LjA4LjAzLjAyNC4wMzEuMDA3LjEwNS0uMDYuMDhhNSA1IDAgMCAxLS40MDQtLjI4M2MtLjUwMy0uMzg4LTEuMDc4LS45NzQtMS40OTktMS40NDctLjA2OC0uMTY2LS4xNi0uMzUuMDAyLS40ODcuODg4LS41NSAxLjc2OC0xLjEyNiAyLjY3LTEuNjUxIDIuNjcxLTEuNTU4IDUuNzExLTMuMzE4IDguMjY3LS40NjUgMi4xMTkgMi4zNjYgMS41MTQgNS4yMTItLjUxMiA3LjM3MnptLTguMjI0LTUuMzhjLjY5OS0uMTIyIDIuMDE4LjU3MiAyLjIzNS0uNDU2LjAyMS0uMS0uMDM2LS4xNTcuMDItLjI1NS4wNDMtLjA3My4yODYtLjI1LjM3LS4zMTguMjctLjIxNy41NzctLjM4Ny44NDItLjYxMi0xLjAyOS4xNjYtMi4wNjUuNzU2LTIuOTY0IDEuMjc3LS4xNDkuMDg2LS4zMS4xNzYtLjQ1MS4yNzMtLjAzNy4wMjUtLjA3NS0uMDA2LS4wNTMuMDltLTQuODMgMTAuODQ0Yy0xLjcxNSAxLjg4MS0xLjMyNSA0LjU3LjQ5NCA2LjIxNyAxLjgxMSAxLjY0MSA0LjY2IDIuMjIzIDcuMDQ4IDIuMTA4IDIuMTUyLS4xMDMgNC4zMzctLjgxMiA2LjQ2LS4wOTEuODI1LjI4IDEuNTQ2LjgwNSAyLjE2IDEuNDExLS4wODMtLjQtLjMyNC0uODE5LS41NTgtMS4xNTktMi4xMy0zLjA5NS02LjI3LTEuOTM1LTkuNDI2LTIuNTUzLTEuNzExLS4zMzUtMy40OTEtMS4xMTgtNC41MzMtMi41NjctLjkwMS0xLjI1My0xLjA0Mi0yLjczLS41OTUtNC4xOTQtLjA5MS0uMDktLjk1Mi43MjEtMS4wNS44MjhtNi4zNjYtOC42NjdjLS4zODIuMzM5LS43ODcuNjYtMS4yMTIuOTQ4bC0xLjIwNy41OWMxLjAyMi4wMzkgMi4wOC0uNTQ2IDIuNDItMS41MzciLz48L3N2Zz4=" alt="mulgadc.com"></a>
+</p>
 
-Reads come from the `bd` CLI (`bd ... --json`); writes (e.g. drag-and-drop status changes on the board) also go through `bd` so bead invariants stay intact.
+<p align="center">
+  <a href="#why-maggie">Why Maggie?</a> ·
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#views">Views</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#configuration">Configuration</a> ·
+  <a href="#http-api">HTTP API</a> ·
+  <a href="#docker">Docker</a> ·
+  <a href="#development">Development</a> ·
+  <a href="#security">Security</a>
+</p>
 
-## Stack
+---
 
-- Backend: Go HTTP server, embeds the built frontend.
-- Frontend: Vite + React 19 + TanStack Router/Query + Tailwind 4
+# Maggie: a fast web UI for Beads issue tracking.
 
-## Build & run
+Maggie is a single Go binary that serves a web UI over [Beads](https://github.com/steveyegge/beads), the `bd` issue tracker. It reads through `bd ... --json` and writes back through `bd` as well, so every bead invariant the CLI enforces still holds when you drag a card across a board.
+
+The compiled frontend is embedded in the binary. There is nothing to deploy alongside it, no database of its own, and no runtime dependency beyond the `bd` binary itself.
+
+## Why Maggie?
+
+`bd` is complete but text-only, and some questions are far easier to answer visually — what is blocked on what, which epic is stalling, where the work has piled up.
+
+- **No second source of truth.** Maggie never writes to your issue store directly. Every mutation shells out to `bd`, which means validation, IDs, history and hooks behave exactly as they do on the command line.
+- **One binary.** The React app is compiled into the Go executable with `go:embed`. Copy it to a host, point it at a repo, done.
+- **Zero Go dependencies.** The module graph is empty: only the standard library. No supply chain to audit and no outbound network calls.
+- **Works on the repo you already have.** Point `MAGGIE_BEADS_DIR` at any checkout with a `.beads/` directory.
+
+## Quick start
+
+**Prerequisites**
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Go | 1.27+ | to build the binary |
+| Node.js | 24.14.0 | pinned in `frontend/.nvmrc` |
+| pnpm | 12.3.4 | pinned via `packageManager` in `frontend/package.json` |
+| `bd` | 1.x | the [Beads](https://github.com/steveyegge/beads) CLI, on `PATH` |
+
+**Build and run**
 
 ```bash
-make all     # build frontend -> embed -> build Go binary
-make run     # build + serve the repo in the current dir (MAGGIE_BEADS_DIR=.)
-# open http://localhost:8088
+git clone https://github.com/mulgadc/maggie.git
+cd maggie
+make all                            # build the frontend, embed it, build the binary
+MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 ```
 
-The Go binary embeds `cmd/maggie/web`, the Vite build output. That directory is a build artefact and is not in git, so `make build` runs `make ui` for you when it is missing. A bare `go build ./cmd/maggie` on a fresh clone fails until it exists.
+Then open <http://localhost:8088>.
 
-## Frontend dev (hot reload)
+`make all` is `make ui` followed by `make build`. The Vite output lands in `cmd/maggie/web`, which is a build artefact and is not tracked in git — `make build` will run `make ui` for you when it is missing, but a bare `go build ./cmd/maggie` on a fresh clone fails until it exists.
 
-```bash
-make run          # backend on :8088 (terminal 1)
-make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
+To serve the repo you are standing in, `make run` does the build and starts the server with `MAGGIE_BEADS_DIR=.`.
+
+## Views
+
+| Route | What it shows |
+|-------|---------------|
+| `/` | Dashboard: a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated |
+| `/table` | Sortable, filterable issue table, groupable by epic or by label |
+| `/board` | Kanban board by status; drag a card to change status |
+| `/graph` | Force-directed dependency graph, solid edges for blockers and dashed for parent/child |
+
+The dashboard can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work. That choice is stored in the browser.
+
+Filters, sorting and grouping are held in the URL query string, so any view you are looking at is a link you can paste to someone else.
+
+Clicking an issue opens a detail panel for editing description, notes, acceptance criteria, priority, status, assignee, labels, comments and dependencies.
+
+## Architecture
+
+```
+Browser ── HTTP ──▶ maggie ── exec ──▶ bd ──▶ .beads/ (JSONL or Dolt)
+   SPA              Go binary          CLI
 ```
 
-## Config (env)
+Maggie is a thin, validating shell around the CLI:
 
-| Var                 | Default | Description                                         |
-|---------------------|---------|-----------------------------------------------------|
-| `MAGGIE_ADDR`      | `:8088` | Listen address                                       |
-| `MAGGIE_BEADS_DIR` | `.`     | Working dir containing `.beads/`                     |
-| `MAGGIE_BD_BIN`    | `bd`    | Path to the `bd` binary                              |
-| `MAGGIE_ACTORS`    | —       | Comma-separated identity roster for the edit picker  |
+- **`cmd/maggie`** — HTTP server. Serves the embedded SPA, falling back to `index.html` for client-side routes, and exposes the JSON API. Every request parameter is checked against an allowlist regex before it can reach a subprocess.
+- **`internal/beads`** — the `bd` wrapper. Builds argv directly (never a shell string), applies a per-command timeout, and forwards `bd`'s JSON to the client untouched.
 
-Edits are attributed with `bd --actor`. maggie has no login, so the identity is
-self-asserted: pick one from the `MAGGIE_ACTORS` roster or type it in. Leaving
-the roster unset just means everyone types their own name.
+Reads forward `bd`'s own JSON verbatim rather than remodelling it, so Maggie does not drift from the CLI as beads evolves.
 
-## Endpoints
+## Configuration
 
-- `GET /` — SPA (table / board / graph)
-- `GET /api/issues?status=&priority=&limit=&all=` — list issues
-- `GET /api/ready` — ready-to-work issues
-- `GET /api/issue?id=<id>` — issue detail
-- `GET /api/graph` — dependency edges (JSON), rendered client-side
+All configuration is environment variables. There is no config file.
 
-## Docker (portable maggie + dolt stack)
+| Var | Default | Description |
+|-----|---------|-------------|
+| `MAGGIE_ADDR` | `:8088` | Listen address |
+| `MAGGIE_BEADS_DIR` | `.` | Working directory containing `.beads/` |
+| `MAGGIE_BD_BIN` | `bd` | Path to the `bd` binary |
+| `MAGGIE_ACTORS` | — | Comma-separated identity roster for the edit picker |
 
-Packages maggie, `bd`, and `dolt` into one image; compose runs a dolt server plus the maggie web UI.
+Edits are attributed with `bd --actor`. Maggie has no login, so the identity is self-asserted: pick one from the `MAGGIE_ACTORS` roster or type your own. Leaving the roster unset just means everyone types a name.
+
+## HTTP API
+
+Reads:
+
+| Method | Path | Returns |
+|--------|------|---------|
+| `GET` | `/api/issues?status=&priority=&limit=&all=` | Issue list |
+| `GET` | `/api/ready` | Ready-to-work issues |
+| `GET` | `/api/issue?id=<id>` | One issue, with dependencies and comments |
+| `GET` | `/api/graph` | Dependency edges |
+| `GET` | `/api/actors` | The identity roster |
+
+Writes, all `POST` with a JSON body carrying `id` and `actor`:
+
+| Path | Body | Effect |
+|------|------|--------|
+| `/api/issue/update` | status, priority, assignee, description, notes, acceptance, label deltas | `bd update` |
+| `/api/issue/comment` | `text` | `bd comments add` |
+| `/api/issue/dep` | `depends_on`, `type` | `bd dep add`/`relate`, or reparent |
+
+Each write replies with the refreshed issue so the client can update its cache without a second round-trip. Omitted fields are left unchanged; an explicit empty assignee clears it.
+
+## Docker
+
+The image bundles `maggie`, `bd` and `dolt`, and the entrypoint's first argument picks the role, so one image backs every compose service. Compose runs a Dolt server plus the web UI.
 
 ```bash
-# 1. drop a snapshot of the source-of-truth jsonl
+# 1. drop a snapshot of your issues.jsonl
 mkdir -p snapshot
 cp /path/to/your/repo/.beads/issues.jsonl snapshot/issues.jsonl
 
-# 2. build + seed + run
+# 2. build, seed the Dolt volume, run
 make docker-build
-make docker-seed     # import snapshot -> dolt volume
-make docker-up       # http://localhost:8088
+make docker-seed
+make docker-up          # http://localhost:8088
 
-# later: refresh the data from a fresh snapshot
-cp .../issues.jsonl snapshot/issues.jsonl
-make docker-refresh  # stop dolt -> re-seed -> start dolt
+# later: refresh from a fresh snapshot
+make docker-refresh     # stop dolt -> re-seed -> start dolt
 ```
 
-Image versions are pinned via build args (`BD_VERSION`, `DOLT_VERSION`, `GO_VERSION`) in the `Dockerfile`.
+Versions are pinned as build args in the `Dockerfile`: `GO_VERSION` (1.27), `BD_VERSION` (v1.0.5) and `DOLT_VERSION` (2.1.10). `make docker-backup` exports the live database back out to JSONL.
 
-> **Security:** maggie has no built-in auth and the compose file publishes
-> `:8088`. Front it with a VPN or an authenticating reverse proxy, and keep the
-> dolt port (`3307`) internal — never publish it.
+## Development
+
+```bash
+make run    # backend on :8088          (terminal 1)
+make dev    # Vite on :3001, proxying /api -> :8088, with hot reload (terminal 2)
+```
+
+`make preflight` must pass before you commit. It runs `golangci-lint`, the frontend lint and format checks, and a full build. `make fix` auto-fixes what has a fixer on both sides.
+
+The frontend is React 19 with TanStack Router and Query, Tailwind 4 and Vite, built with the React Compiler enabled. Linting and formatting are oxlint and oxfmt.
+
+## Security
+
+**Maggie has no authentication.** Anyone who can reach the port can read and modify every issue in the store.
+
+Run it on a trusted network, or behind an authenticating reverse proxy that terminates TLS. If you use the compose stack, keep the Dolt port (`3307`) internal and never publish it.
+
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
+
+## Trademarks
+
+Beads is a project by Steve Yegge. Dolt is a trademark of DoltHub, Inc. Maggie is not affiliated with or endorsed by either.
 
 ## License
 
