@@ -40,19 +40,19 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 
 ## Screenshots
 
-**Dashboard** — a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated. The sequence can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work.
+**Dashboard**
 
 ![Dashboard](.github/assets/screenshot-dashboard.png)
 
-**Table** — sortable and filterable, groupable by epic or by label, with the full bead open alongside it for editing.
+**Table**
 
 ![Table](.github/assets/screenshot-table.png)
 
-**Board** — kanban by status; drag a card to change it.
+**Board**
 
 ![Board](.github/assets/screenshot-board.png)
 
-**Graph** — force-directed dependencies, solid edges for blockers and dashed for parent/child, optionally clustered into label bubbles.
+**Graph**
 
 ![Graph](.github/assets/screenshot-graph.png)
 
@@ -95,7 +95,7 @@ make build
 MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 ```
 
-The compiled SPA is embedded with `go:embed`, so the result is one self-contained binary with no runtime assets to ship. `make build` compiles the frontend only when it is missing; after editing anything under `frontend/`, run `make build-ui` to pick the change up.
+The compiled SPA is embedded with `go:embed`, so the result is one self-contained binary with no runtime assets to ship.
 
 To build the container image instead:
 
