@@ -15,10 +15,11 @@
 <p align="center">
   <a href="#why-maggie">Why Maggie?</a> ·
   <a href="#quick-start">Quick start</a> ·
+  <a href="#build-from-source">Build from source</a> ·
   <a href="#views">Views</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#configuration">Configuration</a> ·
-  <a href="#docker">Docker</a> ·
+  <a href="#deployment">Deployment</a> ·
   <a href="#development">Development</a> ·
   <a href="#security">Security</a>
 </p>
@@ -39,6 +40,34 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 
 ## Quick Start
 
+The container bundles `maggie` and the `bd` CLI, so there is nothing to install and no database to stand up. Point it at any checkout that already has a `.beads/` directory:
+
+```bash
+cd /path/to/your/repo
+
+docker run --rm -p 8088:8088 \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD/.beads:/repo/.beads" \
+  ghcr.io/mulgadc/maggie:latest
+```
+
+Then open <http://localhost:8088>.
+
+Only `.beads/` is mounted — maggie never needs the rest of your checkout. `bd` runs inside the container against its embedded Dolt engine, so the mounted directory *is* the database.
+
+Two things worth getting right up front:
+
+- **`--user` keeps file ownership yours.** Without it, Docker runs as root and anything maggie writes lands in your repo owned by root. Maggie warns at startup if you skip it. Rootless Podman already maps the container user back to you, so it is optional there.
+- **The `bd` version must match.** The image bundles `bd` v1.0.5, and a beads database embeds the schema its `bd` expects. Serving a `.beads/` written by a different version is the documented way to corrupt it. Maggie logs the bundled version at startup — check it against `bd version` on the host.
+
+Podman works with the same command:
+
+```bash
+podman run --rm -p 8088:8088 -v "$PWD/.beads:/repo/.beads:Z" ghcr.io/mulgadc/maggie:latest
+```
+
+## Build From Source
+
 **Prerequisites**
 
 | Tool | Version | Notes |
@@ -46,9 +75,7 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 | Go | 1.27+ | to build the binary |
 | Node.js | 24.14.0 | pinned in `frontend/.nvmrc` |
 | pnpm | 12.3.4 | pinned via `packageManager` in `frontend/package.json` |
-| `bd` | 1.x | the [Beads](https://github.com/steveyegge/beads) CLI, on `PATH` |
-
-**Build and run**
+| `bd` | 1.0.5 | the [Beads](https://github.com/steveyegge/beads) CLI, on `PATH` |
 
 ```bash
 git clone https://github.com/mulgadc/maggie.git
@@ -57,7 +84,13 @@ make build
 MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 ```
 
-Then open <http://localhost:8088>.
+`make build` runs the frontend build first — the compiled SPA is embedded with `go:embed`, so the result is one self-contained binary with no runtime assets to ship.
+
+To build the container image instead:
+
+```bash
+make docker-build
+```
 
 ## Views
 
@@ -102,23 +135,34 @@ Logs are JSON on stdout. An unusable `MAGGIE_LOG_LEVEL` is a startup error rathe
 
 Edits are attributed with `bd --actor`. Maggie has no login, so the identity is self-asserted: pick one from the `MAGGIE_ACTORS` roster or type your own. Leaving the roster unset just means everyone types a name.
 
-## Docker
+## Deployment
 
-The image bundles `maggie`, `bd` and `dolt`, and the entrypoint's first argument picks the role, so one image backs every compose service. Compose runs a Dolt server plus the web UI.
+The image bundles `maggie`, `bd` and `dolt`. The entrypoint's first argument picks a role, so one image covers both deployment modes.
+
+### Mode 1 — one person, one checkout (default)
+
+What the Quick Start above does. `bd` runs inside the container against the embedded Dolt engine in your mounted `.beads/` directory. No server, no seeding, nothing to back up beyond the directory itself.
+
+Use it for your own repo, a demo, or a read-only view of someone's tracker.
+
+Both your host `bd` and the container can use the same `.beads/` — each `bd` invocation is short-lived and takes the lock only while it runs, so concurrent reads are fine. Avoid writing from both at the same moment.
+
+### Mode 2 — a shared tracker for a team
+
+One Dolt SQL server holds the database and everyone's `bd` connects to it as a client, with maggie as the web view onto the same server. This is what the compose stack builds:
 
 ```bash
-# 1. drop a snapshot of your issues.jsonl
 mkdir -p snapshot
 cp /path/to/your/repo/.beads/issues.jsonl snapshot/issues.jsonl
 
-# 2. build, seed the Dolt volume, run
 make docker-build
-make docker-seed
+make docker-seed        # imports the snapshot into the dolt volume
 make docker-up          # http://localhost:8088
 
-# later: refresh from a fresh snapshot
-make docker-refresh     # stop dolt -> re-seed -> start dolt
+make docker-refresh     # later: stop dolt -> re-seed -> start dolt
 ```
+
+Setting this up for a team — client onboarding, accounts and grants, exposing the port safely, backups — is in **[docs/deployment.md](docs/deployment.md)**.
 
 Versions are pinned as build args in the `Dockerfile`: `GO_VERSION` (1.27), `BD_VERSION` (v1.0.5) and `DOLT_VERSION` (2.1.10). `make docker-backup` exports the live database back out to JSONL.
 
