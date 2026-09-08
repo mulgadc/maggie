@@ -14,10 +14,9 @@
 
 <p align="center">
   <a href="#why-maggie">Why Maggie?</a> ·
+  <a href="#screenshots">Screenshots</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#build-from-source">Build from source</a> ·
-  <a href="#screenshots">Screenshots</a> ·
-  <a href="#architecture">Architecture</a> ·
   <a href="#configuration">Configuration</a> ·
   <a href="#deployment">Deployment</a> ·
   <a href="#development">Development</a> ·
