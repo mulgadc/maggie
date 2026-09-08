@@ -23,7 +23,7 @@ Three container roles come out of the same image, selected by the first argument
 
 ## Before you start
 
-- **Pin `bd` to one version for everyone.** The stack ships the version in `BD_VERSION` (currently v1.0.5). A server and clients on mismatched `bd` versions cause schema skew and breakage. This is the single biggest adoption risk — confirm `bd version` matches across the team before cutover, not after.
+- **Pin `bd` to one version for everyone.** The stack ships the version in `BD_VERSION` (currently v1.2.2). A server and clients on mismatched `bd` versions cause schema skew and breakage. This is the single biggest adoption risk — confirm `bd version` matches across the team before cutover, not after.
 - **Decide on accounts.** Clients connect as a shared least-privilege account (read/write, no `DROP`). `root` stays as break-glass.
 - **Enable Docker on boot.** Both services carry `restart: unless-stopped`, so they survive crashes and reboots — but only if the daemon starts on boot: `sudo systemctl enable --now docker`. Note the `unless-stopped` semantics: a manual `docker compose down` or `stop` sticks across a reboot. Only a running stack auto-resumes.
 

@@ -5,7 +5,7 @@
 # image backs every compose service and lifts cleanly to another host.
 
 ARG GO_VERSION=1.27
-ARG BD_VERSION=v1.0.5
+ARG BD_VERSION=v1.2.2
 ARG DOLT_VERSION=2.1.10
 
 # --- maggie binary (embeds the prebuilt SPA in cmd/maggie/web) ---

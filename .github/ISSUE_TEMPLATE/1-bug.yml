@@ -55,4 +55,4 @@ body:
         Arch: amd64
         Deployment: docker compose, or ./maggie binary
         Browser: Firefox 133
-        bd: v1.0.5
+        bd: v1.2.2

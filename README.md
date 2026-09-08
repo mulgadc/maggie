@@ -87,7 +87,7 @@ podman run --rm -p 8088:8088 -v "$PWD/.beads:/repo/.beads:Z" ghcr.io/mulgadc/mag
 | Go | 1.27+ | to build the binary |
 | Node.js | 24.14.0 | pinned in `frontend/.nvmrc` |
 | pnpm | 12.3.4 | pinned via `packageManager` in `frontend/package.json` |
-| `bd` | 1.0.5 | the [Beads](https://github.com/steveyegge/beads) CLI, on `PATH` |
+| `bd` | 1.2.2 | the [Beads](https://github.com/steveyegge/beads) CLI, on `PATH` |
 
 ```bash
 git clone https://github.com/mulgadc/maggie.git
