@@ -88,7 +88,7 @@ export function FilterBar({
   const dirty = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS)
 
   return (
-    <div className="border-line bg-bg flex flex-col gap-2 border-b px-5 py-3">
+    <div className="flex flex-col gap-2 border-b border-line bg-bg px-5 py-3">
       <div className="flex flex-wrap items-center gap-2">
         <input
           className={`${FIELD} w-64`}
@@ -169,7 +169,7 @@ export function FilterBar({
             onClick={() => {
               onChange(EMPTY_FILTERS)
             }}
-            className="border-line hover:text-text inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm text-muted"
+            className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-sm text-muted hover:text-text"
           >
             <X size={14} /> clear
           </button>
