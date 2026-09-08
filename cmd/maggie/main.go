@@ -128,6 +128,7 @@ func serve(ctx context.Context, srv *http.Server) error {
 func routes(bd *beads.Client, actors []string, web fs.FS) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/", spaHandler(web))
+	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/api/ready", jsonHandler(func(r *http.Request) ([]byte, error) {
 		return bd.Ready(r.Context())
 	}))
@@ -226,6 +227,21 @@ func securityHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		next.ServeHTTP(w, r)
 	})
+}
+
+// healthHandler answers a liveness probe: the process is up and serving. It
+// deliberately does not shell out to bd, so a probe cannot be turned into an
+// unauthenticated way to spawn subprocesses. /api/ready is beads' ready-to-work
+// list, not a readiness probe, despite the name.
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	if err := json.NewEncoder(w).Encode(map[string]string{
+		"status":  "ok",
+		"version": Version,
+	}); err != nil {
+		slog.Error("health encode", "err", err)
+	}
 }
 
 // spaHandler serves embedded static assets, falling back to index.html for

@@ -543,6 +543,32 @@ func TestSPAHandlerCacheControl(t *testing.T) {
 	}
 }
 
+func TestHealthEndpoint(t *testing.T) {
+	c, base, argv := newServer(t, "ok", nil)
+	resp := get(t, c, base+"/health")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	var got map[string]string
+	if err := json.Unmarshal([]byte(body(t, resp)), &got); err != nil {
+		t.Fatalf("unmarshal health body: %v", err)
+	}
+	if got["status"] != "ok" {
+		t.Errorf("status = %q, want ok", got["status"])
+	}
+	if got["version"] != Version {
+		t.Errorf("version = %q, want %q", got["version"], Version)
+	}
+	// A cached probe would keep reporting a dead process as healthy.
+	if cc := resp.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", cc)
+	}
+	// The probe must not be a way to make an unauthenticated caller run bd.
+	if _, err := os.Stat(argv); err == nil {
+		t.Error("/health shelled out to bd")
+	}
+}
+
 func TestHTTPServerTimeouts(t *testing.T) {
 	srv := httpServer(":8088", http.NewServeMux())
 	if srv.ReadTimeout == 0 || srv.ReadHeaderTimeout == 0 ||
