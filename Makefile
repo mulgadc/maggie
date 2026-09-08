@@ -1,4 +1,4 @@
-.PHONY: ui build run dev fix preflight docker-build docker-prune docker-clean docker-seed docker-up docker-down docker-refresh docker-backup
+.PHONY: ui build run dev lint fix preflight docker-build docker-prune docker-clean docker-seed docker-up docker-down docker-refresh docker-backup
 
 # Build the React frontend into the embedded web dir.
 ui:
@@ -23,14 +23,19 @@ run: build
 dev:
 	cd frontend && pnpm dev
 
+# Lint all Go code via golangci-lint (replaces check-format, vet, gosec, staticcheck)
+lint:
+	golangci-lint run ./...
+
+# Auto-fix every linter issue that has a fixer, both sides.
 fix:
 	cd frontend && pnpm fix
-	go fmt ./...
+	golangci-lint run --fix ./...
 
-preflight:
-	go vet ./...
+# Run the same checks as CI. Coverage gates land with the test suite.
+preflight: lint
 	cd frontend && pnpm lint
-	go build ./...
+	$(MAKE) build
 
 # --- Docker (portable maggie + dolt stack) ---
 

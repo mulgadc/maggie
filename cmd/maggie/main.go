@@ -4,6 +4,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -249,7 +250,7 @@ func writeHandler(fn func(*http.Request) (string, error), bd *beads.Client) http
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := fn(r)
 		if err != nil {
-			if _, ok := err.(badRequest); ok {
+			if _, ok := errors.AsType[badRequestError](err); ok {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -268,17 +269,17 @@ func writeHandler(fn func(*http.Request) (string, error), bd *beads.Client) http
 	}
 }
 
-type badRequest struct{ msg string }
+type badRequestError struct{ msg string }
 
-func (e badRequest) Error() string { return e.msg }
-func errBadRequest(m string) error { return badRequest{m} }
+func (e badRequestError) Error() string { return e.msg }
+func errBadRequest(m string) error      { return badRequestError{m} }
 
 // jsonHandler adapts a bd-backed fetch into an HTTP handler, forwarding raw JSON.
 func jsonHandler(fn func(*http.Request) ([]byte, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		out, err := fn(r)
 		if err != nil {
-			if _, ok := err.(badRequest); ok {
+			if _, ok := errors.AsType[badRequestError](err); ok {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -296,7 +297,7 @@ func jsonHandler(fn func(*http.Request) ([]byte, error)) http.HandlerFunc {
 // /api/actors encodes [] rather than null.
 func splitActors(s string) []string {
 	out := []string{}
-	for _, a := range strings.Split(s, ",") {
+	for a := range strings.SplitSeq(s, ",") {
 		if a = strings.TrimSpace(a); a != "" {
 			out = append(out, a)
 		}

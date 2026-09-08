@@ -6,9 +6,11 @@ package beads
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -39,7 +41,7 @@ func (c *Client) run(ctx context.Context, args ...string) ([]byte, error) {
 	cmd.Dir = c.dir
 	out, err := cmd.Output()
 	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
+		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 			return nil, fmt.Errorf("bd %v: %w: %s", args, err, ee.Stderr)
 		}
 		return nil, fmt.Errorf("bd %v: %w", args, err)
@@ -75,7 +77,7 @@ func (c *Client) List(ctx context.Context, o ListOpts) ([]byte, error) {
 		limit = 100000
 	}
 	if limit > 0 {
-		args = append(args, "--limit", fmt.Sprintf("%d", limit))
+		args = append(args, "--limit", strconv.Itoa(limit))
 	}
 	return c.run(ctx, args...)
 }

@@ -9,7 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 )
@@ -56,7 +56,7 @@ func (f *Fetcher) Members(ctx context.Context) []string {
 		}
 		return f.fallback
 	}
-	sort.Slice(logins, func(i, j int) bool { return logins[i] < logins[j] })
+	slices.Sort(logins)
 	f.cached = logins
 	f.expiry = time.Now().Add(f.ttl)
 	return logins
