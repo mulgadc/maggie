@@ -76,3 +76,7 @@ Image versions are pinned via build args (`BD_VERSION`, `DOLT_VERSION`,
 > **Security:** maggie has no built-in auth and the compose file publishes
 > `:8088`. Front it with a VPN or an authenticating reverse proxy, and keep the
 > dolt port (`3307`) internal — never publish it.
+
+## License
+
+Maggie is licensed under the [GNU Affero General Public License v3.0 (AGPLv3)](LICENSE) license.
