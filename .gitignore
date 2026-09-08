@@ -5,7 +5,6 @@
 
 # Node
 frontend/node_modules/
-frontend/src/routeTree.gen.ts
 
 # Docker — local snapshots (jsonl is a throwaway import, not source)
 snapshot/*.jsonl

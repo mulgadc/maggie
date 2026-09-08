@@ -1,17 +1,13 @@
 # Maggie
 
-Lightweight web UI for viewing and managing [Beads](https://github.com/steveyegge/beads)
-issues. Part of the Mulga stack.
+Lightweight web UI for viewing and managing [Beads](https://github.com/steveyegge/beads) issues. Part of the Mulga stack.
 
-Reads come from the `bd` CLI (`bd ... --json`); writes (e.g. drag-and-drop status
-changes on the board) also go through `bd` so bead invariants stay intact.
-See [docs/plan.md](docs/plan.md).
+Reads come from the `bd` CLI (`bd ... --json`); writes (e.g. drag-and-drop status changes on the board) also go through `bd` so bead invariants stay intact.
 
 ## Stack
 
 - Backend: Go HTTP server, embeds the built frontend.
-- Frontend: Vite + React 19 + TanStack Router/Query + Tailwind 4 (matches
-  `spinifex-ui` conventions: oxlint/oxfmt, pnpm).
+- Frontend: Vite + React 19 + TanStack Router/Query + Tailwind 4
 
 ## Build & run
 
@@ -21,8 +17,7 @@ make run     # build + serve (default MAGGIE_BEADS_DIR=$HOME/Development/mulga)
 # open http://localhost:8088
 ```
 
-The Go binary embeds `cmd/maggie/web` (the Vite build output). `make build`
-alone works only after `make ui` has produced that output at least once.
+The Go binary embeds `cmd/maggie/web` (the Vite build output). `make build` alone works only after `make ui` has produced that output at least once.
 
 ## Frontend dev (hot reload)
 
@@ -49,11 +44,7 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 ## Docker (portable maggie + dolt stack)
 
-Packages maggie, `bd`, and `dolt` into one image; compose runs a dolt server plus
-the maggie web UI. Post-cutover this dolt server is the team's **live shared beads
-backend** (see [docs/cutover.md](docs/cutover.md)); maggie reads and writes it
-through `bd`. The snapshot-seed flow below stands up or re-seeds that server from
-an authoritative `issues.jsonl`. Lifts to another host via the named volume.
+Packages maggie, `bd`, and `dolt` into one image; compose runs a dolt server plus the maggie web UI.
 
 ```bash
 # 1. drop a snapshot of the source-of-truth jsonl
@@ -70,8 +61,7 @@ cp .../issues.jsonl snapshot/issues.jsonl
 make docker-refresh  # stop dolt -> re-seed -> start dolt
 ```
 
-Image versions are pinned via build args (`BD_VERSION`, `DOLT_VERSION`,
-`GO_VERSION`) in the `Dockerfile`.
+Image versions are pinned via build args (`BD_VERSION`, `DOLT_VERSION`, `GO_VERSION`) in the `Dockerfile`.
 
 > **Security:** maggie has no built-in auth and the compose file publishes
 > `:8088`. Front it with a VPN or an authenticating reverse proxy, and keep the
