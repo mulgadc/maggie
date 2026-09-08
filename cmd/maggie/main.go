@@ -195,12 +195,32 @@ func spaHandler(sub fs.FS) http.Handler {
 		if p == "." {
 			p = "index.html"
 		}
-		if _, err := fs.Stat(sub, p); err != nil && path.Ext(p) == "" {
+		if _, err := fs.Stat(sub, p); err != nil {
+			// A missing path that names a file is a real 404, and it is served
+			// without a cache directive so the miss is not remembered.
+			if path.Ext(p) != "" {
+				fileServer.ServeHTTP(w, r)
+				return
+			}
 			r = r.Clone(r.Context())
 			r.URL.Path = "/"
+			p = "index.html"
 		}
+		w.Header().Set("Cache-Control", assetCacheControl(p))
 		fileServer.ServeHTTP(w, r)
 	})
+}
+
+// embed.FS reports a zero ModTime and FileServer sets no ETag, so a revalidated
+// response has no validator to answer 304 with. The content hash under assets/
+// is that validator: the name addresses one build, so it can be cached forever.
+// Everything else is revalidated, index.html above all — it is what points at
+// the current build's hashed names.
+func assetCacheControl(p string) string {
+	if strings.HasPrefix(p, "assets/") {
+		return "public, max-age=31536000, immutable"
+	}
+	return "no-cache"
 }
 
 // parseList builds ListOpts from allowlisted, validated query params.

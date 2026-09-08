@@ -506,6 +506,41 @@ func TestSPAHandlerMissingAssetIs404(t *testing.T) {
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", resp.StatusCode)
 	}
+	// A cached 404 would outlive the deploy that fixes the missing file.
+	if cc := resp.Header.Get("Cache-Control"); cc != "" {
+		t.Errorf("Cache-Control on a 404 = %q, want none", cc)
+	}
+}
+
+// Hashed asset names address one build and can be cached forever; index.html
+// points at those names, so it must be revalidated on every load.
+func TestSPAHandlerCacheControl(t *testing.T) {
+	web := fstest.MapFS{
+		"index.html":    {Data: []byte("spa")},
+		"assets/app.js": {Data: []byte("console.log(1)")},
+		"favicon.ico":   {Data: []byte("icon")},
+	}
+	srv := httptest.NewServer(spaHandler(web))
+	t.Cleanup(srv.Close)
+
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{"hashed asset is immutable", "/assets/app.js", "public, max-age=31536000, immutable"},
+		{"index revalidates", "/", "no-cache"},
+		{"client route revalidates", "/board", "no-cache"},
+		{"unhashed root file revalidates", "/favicon.ico", "no-cache"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := get(t, srv.Client(), srv.URL+tt.path)
+			if got := resp.Header.Get("Cache-Control"); got != tt.want {
+				t.Errorf("Cache-Control = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestEnvOr(t *testing.T) {
