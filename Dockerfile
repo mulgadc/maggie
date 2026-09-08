@@ -4,7 +4,7 @@
 # one-shot seed, or maggie web) is chosen by the entrypoint argument so the same
 # image backs every compose service and lifts cleanly to another host.
 
-ARG GO_VERSION=1.26
+ARG GO_VERSION=1.27
 ARG BD_VERSION=v1.0.5
 ARG DOLT_VERSION=2.1.10
 
