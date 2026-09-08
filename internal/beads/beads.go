@@ -8,7 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,6 +41,7 @@ func (c *Client) run(ctx context.Context, args ...string) ([]byte, error) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, c.bin, args...)
 	cmd.Dir = c.dir
+	cmd.Env = c.env()
 	out, err := cmd.Output()
 	if err != nil {
 		if ee, ok := errors.AsType[*exec.ExitError](err); ok {
@@ -47,6 +50,26 @@ func (c *Client) run(ctx context.Context, args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("bd %v: %w", args, err)
 	}
 	return out, nil
+}
+
+// beadsDirEnv is bd's own pointer at a .beads directory. It outranks the
+// working directory bd would otherwise discover from, so a value inherited from
+// the surrounding environment silently redirects every command to a different
+// tracker than the one maggie was configured with and reports.
+const beadsDirEnv = "BEADS_DIR"
+
+// env returns the child environment with BEADS_DIR pinned to the configured
+// directory, so what maggie serves is what it was pointed at. Everything else
+// is inherited: bd needs PATH, HOME and its own BEADS_* credentials.
+func (c *Client) env() []string {
+	environ := os.Environ()
+	out := make([]string, 0, len(environ)+1)
+	for _, kv := range environ {
+		if name, _, ok := strings.Cut(kv, "="); !ok || name != beadsDirEnv {
+			out = append(out, kv)
+		}
+	}
+	return append(out, beadsDirEnv+"="+filepath.Join(c.dir, ".beads"))
 }
 
 // ListOpts holds the allowlisted filters for List. Empty fields are omitted;

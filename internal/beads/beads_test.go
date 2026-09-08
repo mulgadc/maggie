@@ -46,6 +46,10 @@ func stubMain() int {
 		return 3
 	case "sleep":
 		time.Sleep(30 * time.Second)
+	case "echodir":
+		// Report the .beads directory bd was actually pointed at.
+		fmt.Print(os.Getenv(beadsDirEnv))
+		return 0
 	}
 	fmt.Print(os.Getenv(stubOutEnv))
 	return 0
@@ -75,6 +79,51 @@ func readArgv(t *testing.T, path string) []string {
 		t.Fatalf("unmarshal argv %q: %v", b, err)
 	}
 	return got
+}
+
+// bd reads BEADS_DIR in preference to the working directory, so a value left in
+// the environment used to redirect every command at a different tracker while
+// maggie logged and reported the directory it was configured with.
+func TestRunPinsBeadsDirOverTheInheritedEnvironment(t *testing.T) {
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable: %v", err)
+	}
+	t.Setenv(stubEnv, "echodir")
+	t.Setenv(beadsDirEnv, "/somewhere/else/.beads")
+
+	dir := t.TempDir()
+	c := New(self, dir, 5*time.Second)
+	out, err := c.Ready(t.Context())
+	if err != nil {
+		t.Fatalf("Ready: %v", err)
+	}
+
+	want := filepath.Join(dir, ".beads")
+	if string(out) != want {
+		t.Errorf("bd saw %s=%q, want %q — the inherited value won", beadsDirEnv, out, want)
+	}
+}
+
+func TestEnvKeepsTheRestOfTheEnvironment(t *testing.T) {
+	t.Setenv(beadsDirEnv, "/stale/.beads")
+	t.Setenv("BEADS_DOLT_PASSWORD", "secret")
+	c := New("bd", "/srv/repo", time.Second)
+
+	var sawPassword bool
+	for _, kv := range c.env() {
+		if kv == beadsDirEnv+"=/stale/.beads" {
+			t.Error("the stale BEADS_DIR survived into the child environment")
+		}
+		if kv == "BEADS_DOLT_PASSWORD=secret" {
+			sawPassword = true
+		}
+	}
+	// bd takes its dolt credentials from the environment; dropping them would
+	// break every server-mode deployment.
+	if !sawPassword {
+		t.Error("BEADS_DOLT_PASSWORD was not passed through to bd")
+	}
 }
 
 func TestNewDefaults(t *testing.T) {
