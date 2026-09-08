@@ -92,7 +92,7 @@ function RootLayout() {
       <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-line bg-bg px-5 py-3">
         <div className="flex items-center gap-3">
           <img
-            src="/maggie.png"
+            src="/maggie.svg"
             alt="maggie logo"
             className="h-20 w-auto rounded-lg object-contain"
           />
