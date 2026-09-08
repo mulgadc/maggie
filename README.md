@@ -68,7 +68,7 @@ Then open <http://localhost:8088>.
 | `/board` | Kanban board by status; drag a card to change status |
 | `/graph` | Force-directed dependency graph, solid edges for blockers and dashed for parent/child |
 
-The dashboard can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work. That choice is stored in the browser.
+The dashboard can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work.
 
 Filters, sorting and grouping are held in the URL query string, so any view you are looking at is a link you can paste to someone else.
 
@@ -81,10 +81,8 @@ Browser ── HTTP ──▶ maggie ── exec ──▶ bd ──▶ .beads/ 
    SPA              Go binary          CLI
 ```
 
-Maggie is a thin, validating shell around the CLI:
-
-- **`cmd/maggie`** — HTTP server. Serves the embedded SPA, falling back to `index.html` for client-side routes, and exposes the JSON API. Every request parameter is checked against an allowlist regex before it can reach a subprocess.
-- **`internal/beads`** — the `bd` wrapper. Builds argv directly (never a shell string), applies a per-command timeout, and forwards `bd`'s JSON to the client untouched.
+- **`cmd/maggie`** — HTTP server. Serves the embedded SPA, falling back to `index.html` for client-side routes, and exposes the JSON API the SPA calls.
+- **`internal/beads`** — the `bd` wrapper. Builds the argv, applies a per-command timeout, and forwards `bd`'s JSON to the client untouched.
 
 Reads forward `bd`'s own JSON verbatim rather than remodelling it, so Maggie does not drift from the CLI as beads evolves.
 
@@ -133,6 +131,8 @@ make dev    # Vite on :3001, proxying /api -> :8088, with hot reload (terminal 2
 **Maggie has no authentication.** Anyone who can reach the port can read and modify every issue in the store.
 
 Run it on a trusted network, or behind an authenticating reverse proxy that terminates TLS. If you use the compose stack, keep the Dolt port (`3307`) internal and never publish it.
+
+The subprocess boundary is defended regardless. `bd` is invoked with an argv array rather than a shell string, so nothing is word-split or globbed. Every id, status, priority, actor, label and dependency type is checked against an allowlist regex before it can reach that call, request bodies are capped at 1 MiB, and each command runs under a timeout.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
