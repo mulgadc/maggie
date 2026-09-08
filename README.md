@@ -38,6 +38,15 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 - **One binary to deploy.** The compiled frontend is embedded with `go:embed`. Copy it to a host, point it at a repo, done.
 - **Works on the repo you already have.** Point `MAGGIE_BEADS_DIR` at any checkout with a `.beads/` directory.
 
+## Views
+
+| Route | What it shows |
+|-------|---------------|
+| `/` | Dashboard: a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated |
+| `/table` | Sortable, filterable issue table, groupable by epic or by label |
+| `/board` | Kanban board by status; drag a card to change status |
+| `/graph` | Force-directed dependency graph, solid edges for blockers and dashed for parent/child |
+
 ## Quick Start
 
 The container bundles `maggie` and the `bd` CLI, so there is nothing to install and no database to stand up. Point it at any checkout that already has a `.beads/` directory:
@@ -52,13 +61,6 @@ docker run --rm -p 8088:8088 \
 ```
 
 Then open <http://localhost:8088>.
-
-Only `.beads/` is mounted — maggie never needs the rest of your checkout. `bd` runs inside the container against its embedded Dolt engine, so the mounted directory *is* the database.
-
-Two things worth getting right up front:
-
-- **`--user` keeps file ownership yours.** Without it, Docker runs as root and anything maggie writes lands in your repo owned by root. Maggie warns at startup if you skip it. Rootless Podman already maps the container user back to you, so it is optional there.
-- **The `bd` version must match.** The image bundles `bd` v1.0.5, and a beads database embeds the schema its `bd` expects. Serving a `.beads/` written by a different version is the documented way to corrupt it. Maggie logs the bundled version at startup — check it against `bd version` on the host.
 
 Podman works with the same command:
 
@@ -92,21 +94,6 @@ To build the container image instead:
 make docker-build
 ```
 
-## Views
-
-| Route | What it shows |
-|-------|---------------|
-| `/` | Dashboard: a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated |
-| `/table` | Sortable, filterable issue table, groupable by epic or by label |
-| `/board` | Kanban board by status; drag a card to change status |
-| `/graph` | Force-directed dependency graph, solid edges for blockers and dashed for parent/child |
-
-The dashboard can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work.
-
-Filters, sorting and grouping are held in the URL query string, so any view you are looking at is a link you can paste to someone else.
-
-Clicking an issue opens a detail panel for editing description, notes, acceptance criteria, priority, status, assignee, labels, comments and dependencies.
-
 ## Configuration
 
 All configuration is environment variables. There is no config file.
@@ -118,10 +105,6 @@ All configuration is environment variables. There is no config file.
 | `MAGGIE_BD_BIN` | `bd` | Path to the `bd` binary |
 | `MAGGIE_ACTORS` | — | Comma-separated identity roster for the edit picker |
 | `MAGGIE_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
-
-Logs are JSON on stdout. An unusable `MAGGIE_LOG_LEVEL` is a startup error rather than a silent fall back, so a typo cannot leave a deployment quietly logging at the wrong verbosity.
-
-Edits are attributed with `bd --actor`. Maggie has no login, so the identity is self-asserted: pick one from the `MAGGIE_ACTORS` roster or type your own. Leaving the roster unset just means everyone types a name.
 
 ## Deployment
 
@@ -151,8 +134,6 @@ make docker-refresh     # later: stop dolt -> re-seed -> start dolt
 ```
 
 Setting this up for a team — client onboarding, accounts and grants, exposing the port safely, backups — is in **[docs/deployment.md](docs/deployment.md)**.
-
-Versions are pinned as build args in the `Dockerfile`: `GO_VERSION` (1.27), `BD_VERSION` (v1.0.5) and `DOLT_VERSION` (2.1.10). `make docker-backup` exports the live database back out to JSONL.
 
 ## Development
 
