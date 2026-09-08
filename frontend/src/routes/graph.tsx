@@ -57,8 +57,9 @@ function Graph() {
   const { data: edges, isLoading: le, error } = useGraph()
 
   // Apply the shared filter bar so the graph honours the same status/label/etc
-  // filters as the table and board.
-  const filters = paramsToFilters(search)
+  // filters as the table and board. The result has to be referentially stable:
+  // a fresh node array each render restarts the simulation before it can tick.
+  const filters = useMemo(() => paramsToFilters(search), [search])
   const filtered = useMemo(
     () => applyFilters(issues ?? [], filters),
     [issues, filters],
@@ -151,6 +152,19 @@ interface Bubble {
   r: number
 }
 
+interface Pos {
+  x: number
+  y: number
+}
+
+type PosMap = Map<string, Pos>
+
+const ORIGIN: Pos = { x: 0, y: 0 }
+
+function snapshot(nodes: Node[]): PosMap {
+  return new Map(nodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]))
+}
+
 function ForceGraph({
   nodes,
   links,
@@ -168,7 +182,9 @@ function ForceGraph({
 }) {
   const svgRef = useRef<SVGSVGElement>(null)
   const simRef = useRef<Simulation<Node, Link>>(null)
-  const [, setTick] = useState(0)
+  // d3 mutates node.x/node.y in place, which no renderer can observe. Each tick
+  // snapshots them into state so the positions the graph draws are a value.
+  const [pos, setPos] = useState<PosMap>(new Map())
   const [tf, setTf] = useState<ZoomTransform>(zoomIdentity)
   const [size, setSize] = useState({ w: 800, h: 600 })
 
@@ -235,8 +251,11 @@ function ForceGraph({
       sim.force("center", forceCenter(size.w / 2, size.h / 2))
     }
     sim.on("tick", () => {
-      setTick((t) => t + 1)
+      setPos(snapshot(nodes))
     })
+    // forceSimulation seeds x/y synchronously, so publish them before the first
+    // tick lands and the graph never paints a frame stacked at the origin.
+    setPos(snapshot(nodes))
     simRef.current = sim
     return () => {
       sim.stop()
@@ -285,17 +304,18 @@ function ForceGraph({
   // encloses every node sharing the primary label.
   const bubbles: Bubble[] = clustered
     ? clusterLabels.map((label) => {
-        const members = nodes.filter(
-          (n) => n.label === label && n.x !== undefined && n.y !== undefined,
-        )
+        const members = nodes
+          .filter((n) => n.label === label)
+          .map((n) => pos.get(n.id))
+          .filter((p): p is Pos => p !== undefined)
         if (!members.length) {
           return { label, cx: 0, cy: 0, r: 0 }
         }
-        const cx = members.reduce((s, n) => s + (n.x ?? 0), 0) / members.length
-        const cy = members.reduce((s, n) => s + (n.y ?? 0), 0) / members.length
+        const cx = members.reduce((s, p) => s + p.x, 0) / members.length
+        const cy = members.reduce((s, p) => s + p.y, 0) / members.length
         const r = Math.max(
           46,
-          ...members.map((n) => Math.hypot((n.x ?? 0) - cx, (n.y ?? 0) - cy)),
+          ...members.map((p) => Math.hypot(p.x - cx, p.y - cy)),
         )
         return { label, cx, cy, r: r + 34 }
       })
@@ -349,13 +369,15 @@ function ForceGraph({
             const s = l.source as Node
             // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- d3-force resolves endpoints to nodes
             const t = l.target as Node
+            const a = pos.get(s.id) ?? ORIGIN
+            const b = pos.get(t.id) ?? ORIGIN
             return (
               <line
                 key={l.key}
-                x1={s.x}
-                y1={s.y}
-                x2={t.x}
-                y2={t.y}
+                x1={a.x}
+                y1={a.y}
+                x2={b.x}
+                y2={b.y}
                 stroke="var(--color-muted)"
                 strokeOpacity={0.5}
                 strokeWidth={1.2}
@@ -367,7 +389,7 @@ function ForceGraph({
           {nodes.map((n) => (
             <g
               key={n.id}
-              transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
+              transform={`translate(${(pos.get(n.id) ?? ORIGIN).x},${(pos.get(n.id) ?? ORIGIN).y})`}
               className="cursor-pointer"
               onPointerDown={drag(n)}
               onClick={() => {
