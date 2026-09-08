@@ -1,6 +1,10 @@
 GO_PROJECT_NAME := maggie
 SHELL := /bin/bash
 
+# maggie is its own module and is often checked out inside another workspace
+# that does not list it in go.work, which makes every go command fail. Opt out.
+export GOWORK := off
+
 VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := -s -w -X main.Version=$(VERSION)
 
@@ -18,11 +22,9 @@ else
   _RACEQ =
 endif
 
-# Preflight — runs the same checks as GitHub Actions. The coverage gates
-# (test-cover, diff-coverage) join this once there is a suite to run; against
-# an empty one they only report 0%.
+# Preflight — runs the same checks as GitHub Actions.
 preflight:
-	@$(MAKE) --no-print-directory QUIET=1 build lint lint-ui govulncheck
+	@$(MAKE) --no-print-directory QUIET=1 build lint lint-ui diff-coverage test-race govulncheck
 	@echo -e "\n ✅ Preflight passed — safe to commit."
 
 # --- Build ---

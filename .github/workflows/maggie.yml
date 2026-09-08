@@ -1,0 +1,83 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build_and_test:
+    name: Build and Test
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          # diff-coverage needs the previous commit to compute changed lines.
+          fetch-depth: 2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+          node-version-file: frontend/.nvmrc
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          cache-dependency-path: "go.sum"
+          go-version-file: "go.mod"
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Frontend
+        working-directory: frontend
+        run: pnpm lint
+
+      # cmd/maggie/web is generated, not committed, and main.go go:embeds it, so
+      # every Go step below depends on this one.
+      - name: Build Frontend
+        working-directory: frontend
+        run: pnpm build
+
+      - name: Check for generated route tree drift
+        working-directory: frontend
+        run: git diff --exit-code -- src/routeTree.gen.ts
+
+      - name: Build
+        run: go build ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.0
+
+      - name: Run Tests with Coverage
+        run: make test-cover
+
+      - name: Check Diff Coverage
+        run: scripts/diff-coverage.sh coverage.out --base HEAD~1
+
+      - name: Run Tests with Race Detector
+        run: make test-race
+
+      - name: Govulncheck
+        run: make govulncheck

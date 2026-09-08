@@ -6,7 +6,7 @@
     "dev": "vite --port 3001 --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "oxlint; oxfmt --check",
+    "lint": "oxlint && oxfmt --check",
     "fix": "oxlint --fix; oxfmt"
   },
   "dependencies": {

@@ -2,6 +2,7 @@
 *.log
 .DS_Store
 .env
+*.out
 
 # Vite build output, embedded into the binary by go:embed. Build artefact, not
 # source — `make build` regenerates it when missing.

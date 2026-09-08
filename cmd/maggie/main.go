@@ -58,8 +58,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
+	srv := &http.Server{Addr: addr, Handler: routes(bd, actors, sub), ReadHeaderTimeout: 10 * time.Second}
+	if err := srv.ListenAndServe(); err != nil {
+		slog.Error("serve", "err", err)
+		os.Exit(1)
+	}
+}
+
+// routes wires the bd-backed API and the embedded SPA onto a mux.
+func routes(bd *beads.Client, actors []string, web fs.FS) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("/", spaHandler(sub))
+	mux.Handle("/", spaHandler(web))
 	mux.HandleFunc("/api/ready", jsonHandler(func(r *http.Request) ([]byte, error) {
 		return bd.Ready(r.Context())
 	}))
@@ -134,13 +144,7 @@ func main() {
 			slog.Error("graph encode", "err", err)
 		}
 	})
-
-	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 10 * time.Second}
-	if err := srv.ListenAndServe(); err != nil {
-		slog.Error("serve", "err", err)
-		os.Exit(1)
-	}
+	return mux
 }
 
 // spaHandler serves embedded static assets, falling back to index.html for
