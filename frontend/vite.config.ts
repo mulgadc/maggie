@@ -1,9 +1,9 @@
-import { fileURLToPath, URL } from "node:url";
+import { fileURLToPath, URL } from "node:url"
 
-import tailwindcss from "@tailwindcss/vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
-import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import tailwindcss from "@tailwindcss/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
 
 export default defineConfig({
   build: {
@@ -11,7 +11,11 @@ export default defineConfig({
     outDir: "../cmd/maggie/web",
     emptyOutDir: true,
   },
-  plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],
+  plugins: [
+    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    react(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: { "@": fileURLToPath(new URL("src", import.meta.url)) },
   },
@@ -19,4 +23,4 @@ export default defineConfig({
     port: 3001,
     proxy: { "/api": "http://localhost:8088" },
   },
-});
+})

@@ -1,73 +1,94 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Activity, AlertTriangle, Clock, Flame, GitMerge, ListOrdered, Tags } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import {
+  Activity,
+  AlertTriangle,
+  Clock,
+  Flame,
+  GitMerge,
+  ListOrdered,
+  Tags,
+} from "lucide-react"
+import { type ReactNode, useMemo, useState } from "react"
 
-import type { Issue, Status } from "@/api";
-import { LabelChip, PriorityBadge, StatusBadge, StatusDot } from "@/components/badges";
-import { allPrefixes, idPrefix, uniqueSorted } from "@/lib/filter";
-import { prereqIds, suggestSequence } from "@/lib/sequence";
-import { useGraph, useIssues, useReady } from "@/queries";
+import type { Issue, Status } from "@/api"
+import {
+  LabelChip,
+  PriorityBadge,
+  StatusBadge,
+  StatusDot,
+} from "@/components/badges"
+import { allPrefixes, idPrefix, uniqueSorted } from "@/lib/filter"
+import { prereqIds, suggestSequence } from "@/lib/sequence"
+import { useGraph, useIssues, useReady } from "@/queries"
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
-});
+})
 
-const STATUS_ORDER: Status[] = ["open", "in_progress", "blocked", "deferred", "closed"];
+const STATUS_ORDER: Status[] = [
+  "open",
+  "in_progress",
+  "blocked",
+  "deferred",
+  "closed",
+]
 
 // useFocus persists the chosen identity (an assignee or an id prefix) so the
 // dashboard can highlight one person's work without any login. Format is
 // "asgn:<name>" or "pref:<prefix>"; "" means no focus selected.
 function useFocus(): [string, (v: string) => void] {
-  const [focus, setFocus] = useState(() => localStorage.getItem("maggie.focus") ?? "");
+  const [focus, setFocus] = useState(
+    () => localStorage.getItem("maggie.focus") ?? "",
+  )
   const set = (v: string) => {
-    setFocus(v);
+    setFocus(v)
     if (v) {
-      localStorage.setItem("maggie.focus", v);
+      localStorage.setItem("maggie.focus", v)
     } else {
-      localStorage.removeItem("maggie.focus");
+      localStorage.removeItem("maggie.focus")
     }
-  };
-  return [focus, set];
+  }
+  return [focus, set]
 }
 
 function byUpdatedDesc(a: Issue, b: Issue): number {
-  return String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""));
+  return String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""))
 }
 
 function byPriority(a: Issue, b: Issue): number {
-  return a.priority - b.priority || byUpdatedDesc(a, b);
+  return a.priority - b.priority || byUpdatedDesc(a, b)
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { data: issues, isLoading, error } = useIssues();
-  const { data: readyData } = useReady();
-  const { data: edgesData } = useGraph();
-  const [focus, setFocus] = useFocus();
+  const navigate = useNavigate()
+  const { data: issues, isLoading, error } = useIssues()
+  const { data: readyData } = useReady()
+  const { data: edgesData } = useGraph()
+  const [focus, setFocus] = useFocus()
 
-  const all = useMemo(() => issues ?? [], [issues]);
-  const ready = useMemo(() => readyData ?? [], [readyData]);
-  const edges = useMemo(() => edgesData ?? [], [edgesData]);
+  const all = useMemo(() => issues ?? [], [issues])
+  const ready = useMemo(() => readyData ?? [], [readyData])
+  const edges = useMemo(() => edgesData ?? [], [edgesData])
 
   const matchesFocus = useMemo(() => {
     if (focus.startsWith("asgn:")) {
-      const a = focus.slice(5);
-      return (i: Issue) => (i.assignee ?? "") === a;
+      const a = focus.slice(5)
+      return (i: Issue) => (i.assignee ?? "") === a
     }
     if (focus.startsWith("pref:")) {
-      const p = focus.slice(5);
-      return (i: Issue) => idPrefix(i.id) === p;
+      const p = focus.slice(5)
+      return (i: Issue) => idPrefix(i.id) === p
     }
-    return null;
-  }, [focus]);
+    return null
+  }, [focus])
 
   // Sequence is personalised: when a focus identity is picked, only that
   // person's (or prefix's) beads are sequenced.
   const sequence = useMemo(() => {
-    const pool = matchesFocus ? all.filter(matchesFocus) : all;
-    return suggestSequence(pool, edges, 5);
-  }, [all, edges, matchesFocus]);
-  const prereqs = useMemo(() => prereqIds(sequence, edges), [sequence, edges]);
+    const pool = matchesFocus ? all.filter(matchesFocus) : all
+    return suggestSequence(pool, edges, 5)
+  }, [all, edges, matchesFocus])
+  const prereqs = useMemo(() => prereqIds(sequence, edges), [sequence, edges])
 
   const counts = useMemo(() => {
     const c: Record<Status, number> = {
@@ -76,23 +97,26 @@ function Dashboard() {
       blocked: 0,
       deferred: 0,
       closed: 0,
-    };
-    for (const i of all) {
-      c[i.status]++;
     }
-    return c;
-  }, [all]);
+    for (const i of all) {
+      c[i.status]++
+    }
+    return c
+  }, [all])
 
-  const openIssues = useMemo(() => all.filter((i) => i.status !== "closed"), [all]);
+  const openIssues = useMemo(
+    () => all.filter((i) => i.status !== "closed"),
+    [all],
+  )
 
   const priBars = useMemo(() => {
-    const c = [0, 0, 0, 0, 0];
+    const c = [0, 0, 0, 0, 0]
     for (const i of openIssues) {
-      c[Math.min(Math.max(i.priority, 0), 4)]++;
+      c[Math.min(Math.max(i.priority, 0), 4)]++
     }
-    const max = Math.max(1, ...c);
-    return c.map((n, p) => ({ p, n, pct: Math.round((n / max) * 100) }));
-  }, [openIssues]);
+    const max = Math.max(1, ...c)
+    return c.map((n, p) => ({ p, n, pct: Math.round((n / max) * 100) }))
+  }, [openIssues])
 
   const critical = useMemo(
     () =>
@@ -101,57 +125,75 @@ function Dashboard() {
         .sort(byPriority)
         .slice(0, 8),
     [openIssues],
-  );
-  const recent = useMemo(() => [...openIssues].sort(byUpdatedDesc).slice(0, 8), [openIssues]);
-  const readyTop = useMemo(() => [...ready].sort(byPriority).slice(0, 8), [ready]);
+  )
+  const recent = useMemo(
+    () => [...openIssues].sort(byUpdatedDesc).slice(0, 8),
+    [openIssues],
+  )
+  const readyTop = useMemo(
+    () => [...ready].sort(byPriority).slice(0, 8),
+    [ready],
+  )
 
   const labelStreams = useMemo(() => {
-    const c = new Map<string, number>();
+    const c = new Map<string, number>()
     for (const i of openIssues) {
       for (const l of i.labels ?? []) {
-        c.set(l, (c.get(l) ?? 0) + 1);
+        c.set(l, (c.get(l) ?? 0) + 1)
       }
     }
-    const max = Math.max(1, ...c.values());
+    const max = Math.max(1, ...c.values())
     return [...c.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([label, n]) => ({ label, n, pct: Math.round((n / max) * 100) }));
-  }, [openIssues]);
+      .map(([label, n]) => ({ label, n, pct: Math.round((n / max) * 100) }))
+  }, [openIssues])
 
   // Selector lists only identities that have actionable (sequenceable) work, so
   // people whose beads are all closed/deferred do not show an empty sequence.
   const actionable = useMemo(
     () =>
       all.filter(
-        (i) => i.status === "open" || i.status === "in_progress" || i.status === "blocked",
+        (i) =>
+          i.status === "open" ||
+          i.status === "in_progress" ||
+          i.status === "blocked",
       ),
     [all],
-  );
-  const assignees = useMemo(() => uniqueSorted(actionable.map((i) => i.assignee)), [actionable]);
-  const prefixes = useMemo(() => allPrefixes(actionable), [actionable]);
+  )
+  const assignees = useMemo(
+    () => uniqueSorted(actionable.map((i) => i.assignee)),
+    [actionable],
+  )
+  const prefixes = useMemo(() => allPrefixes(actionable), [actionable])
 
-  const open = (id: string) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) });
-  const toTable = (search: Record<string, unknown>) => navigate({ to: "/table", search });
+  const open = async (id: string) =>
+    navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  const toTable = async (search: Record<string, unknown>) =>
+    navigate({ to: "/table", search })
 
   if (isLoading) {
-    return <p className="text-muted">loading…</p>;
+    return <p className="text-muted">loading…</p>
   }
   if (error) {
-    return <p className="text-st-blocked">error: {error.message}</p>;
+    return <p className="text-st-blocked">error: {error.message}</p>
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="Total" value={all.length} onClick={() => toTable({})} />
+        <StatCard
+          label="Total"
+          value={all.length}
+          onClick={async () => toTable({})}
+        />
         {STATUS_ORDER.map((s) => (
           <StatCard
             key={s}
             label={s.replace("_", " ")}
             value={counts[s]}
             status={s}
-            onClick={() => toTable({ st: s })}
+            onClick={async () => toTable({ st: s })}
           />
         ))}
       </div>
@@ -161,9 +203,11 @@ function Dashboard() {
         icon={<ListOrdered size={15} />}
         action={
           <select
-            className="rounded-md border border-line bg-bg px-2 py-1 text-text text-xs focus:border-accent focus:outline-none"
+            className="rounded-md border border-line bg-bg px-2 py-1 text-xs text-text focus:border-accent focus:outline-none"
             value={focus}
-            onChange={(e) => setFocus(e.target.value)}
+            onChange={(e) => {
+              setFocus(e.target.value)
+            }}
             title="personalise the sequence"
           >
             <option value="">everyone</option>
@@ -187,7 +231,11 @@ function Dashboard() {
         }
       >
         {sequence.length ? (
-          <SequenceTimeline items={sequence} prereqs={prereqs} onSelect={open} />
+          <SequenceTimeline
+            items={sequence}
+            prereqs={prereqs}
+            onSelect={open}
+          />
         ) : (
           <Empty text="nothing actionable to sequence for this selection" />
         )}
@@ -200,7 +248,7 @@ function Dashboard() {
               <button
                 key={b.p}
                 type="button"
-                onClick={() => toTable({ pri: b.p, st: "open" })}
+                onClick={async () => toTable({ pri: b.p, st: "open" })}
                 className="flex items-center gap-2 text-left"
               >
                 <span className="w-7 shrink-0">
@@ -212,7 +260,9 @@ function Dashboard() {
                     style={{ width: `${b.pct}%` }}
                   />
                 </span>
-                <span className="w-8 shrink-0 text-right text-muted text-xs">{b.n}</span>
+                <span className="w-8 shrink-0 text-right text-xs text-muted">
+                  {b.n}
+                </span>
               </button>
             ))}
           </div>
@@ -225,7 +275,9 @@ function Dashboard() {
                 <button
                   key={l.label}
                   type="button"
-                  onClick={() => toTable({ lbl: l.label, group: "label" })}
+                  onClick={async () =>
+                    toTable({ lbl: l.label, group: "label" })
+                  }
                   className="flex items-center gap-2 text-left"
                 >
                   <span className="w-28 shrink-0 truncate">
@@ -237,7 +289,9 @@ function Dashboard() {
                       style={{ width: `${l.pct}%` }}
                     />
                   </span>
-                  <span className="w-8 shrink-0 text-right text-muted text-xs">{l.n}</span>
+                  <span className="w-8 shrink-0 text-right text-xs text-muted">
+                    {l.n}
+                  </span>
                 </button>
               ))}
             </div>
@@ -271,7 +325,7 @@ function Dashboard() {
         </Panel>
       </div>
     </div>
-  );
+  )
 }
 
 function SequenceTimeline({
@@ -279,29 +333,31 @@ function SequenceTimeline({
   prereqs,
   onSelect,
 }: {
-  items: Issue[];
-  prereqs: Map<string, string[]>;
-  onSelect: (id: string) => void;
+  items: Issue[]
+  prereqs: Map<string, string[]>
+  onSelect: (id: string) => void
 }) {
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
       {items.map((i, idx) => {
-        const deps = prereqs.get(i.id) ?? [];
+        const deps = prereqs.get(i.id) ?? []
         return (
           <button
             key={i.id}
             type="button"
-            onClick={() => onSelect(i.id)}
+            onClick={() => {
+              onSelect(i.id)
+            }}
             className="flex flex-col gap-1.5 rounded-lg border border-line bg-bg p-2.5 text-left transition-colors hover:border-accent"
           >
             <div className="flex items-center gap-1.5">
-              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 font-semibold text-accent text-xs tabular-nums">
+              <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent tabular-nums">
                 {idx + 1}
               </span>
               <PriorityBadge priority={i.priority} />
               {deps.length ? (
                 <span
-                  className="ml-auto inline-flex items-center gap-0.5 text-muted text-xs"
+                  className="ml-auto inline-flex items-center gap-0.5 text-xs text-muted"
                   title={`after ${deps.join(", ")}`}
                 >
                   <GitMerge size={11} />
@@ -309,17 +365,17 @@ function SequenceTimeline({
                 </span>
               ) : null}
             </div>
-            <span className="font-mono text-accent text-xs">{i.id}</span>
+            <span className="font-mono text-xs text-accent">{i.id}</span>
             <span className="line-clamp-2 text-sm leading-snug">{i.title}</span>
             <div className="mt-auto flex flex-wrap items-center gap-1 pt-1">
               <StatusBadge status={i.status} />
               {i.labels?.[0] ? <LabelChip label={i.labels[0]} /> : null}
             </div>
           </button>
-        );
+        )
       })}
     </div>
-  );
+  )
 }
 
 function StatCard({
@@ -328,10 +384,10 @@ function StatCard({
   status,
   onClick,
 }: {
-  label: string;
-  value: number;
-  status?: Status;
-  onClick: () => void;
+  label: string
+  value: number
+  status?: Status
+  onClick: () => void
 }) {
   return (
     <button
@@ -340,12 +396,12 @@ function StatCard({
       className="flex flex-col gap-1 rounded-lg border border-line bg-panel p-3 text-left transition-colors hover:border-accent"
     >
       <span className="text-2xl tabular-nums">{value}</span>
-      <span className="flex items-center gap-1.5 text-muted text-xs lowercase">
+      <span className="flex items-center gap-1.5 text-xs text-muted lowercase">
         {status ? <StatusDot status={status} /> : null}
         {label}
       </span>
     </button>
-  );
+  )
 }
 
 function Panel({
@@ -354,35 +410,45 @@ function Panel({
   action,
   children,
 }: {
-  title: string;
-  icon: ReactNode;
-  action?: ReactNode;
-  children: ReactNode;
+  title: string
+  icon: ReactNode
+  action?: ReactNode
+  children: ReactNode
 }) {
   return (
     <section className="flex flex-col rounded-lg border border-line bg-panel p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className="text-accent">{icon}</span>
-        <h2 className="font-semibold text-sm">{title}</h2>
+        <h2 className="text-sm font-semibold">{title}</h2>
         {action ? <div className="ml-auto">{action}</div> : null}
       </div>
       {children}
     </section>
-  );
+  )
 }
 
-function IssueList({ items, onSelect }: { items: Issue[]; onSelect: (id: string) => void }) {
+function IssueList({
+  items,
+  onSelect,
+}: {
+  items: Issue[]
+  onSelect: (id: string) => void
+}) {
   return (
     <ul className="flex flex-col gap-1">
       {items.map((i) => (
         <li key={i.id}>
           <button
             type="button"
-            onClick={() => onSelect(i.id)}
+            onClick={() => {
+              onSelect(i.id)
+            }}
             className="flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left hover:bg-surface2/50"
           >
             <PriorityBadge priority={i.priority} />
-            <span className="shrink-0 font-mono text-accent text-xs">{i.id}</span>
+            <span className="shrink-0 font-mono text-xs text-accent">
+              {i.id}
+            </span>
             <span className="truncate text-sm">{i.title}</span>
             <span className="ml-auto shrink-0">
               <StatusBadge status={i.status} />
@@ -391,9 +457,9 @@ function IssueList({ items, onSelect }: { items: Issue[]; onSelect: (id: string)
         </li>
       ))}
     </ul>
-  );
+  )
 }
 
 function Empty({ text }: { text: string }) {
-  return <p className="text-muted text-sm italic">{text}</p>;
+  return <p className="text-sm text-muted italic">{text}</p>
 }

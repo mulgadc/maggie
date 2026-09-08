@@ -1,12 +1,17 @@
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronRight } from "lucide-react"
+import { useState } from "react"
 
-import type { Issue } from "@/api";
-import { LabelChip, PriorityBadge, StatusBadge, TypeBadge } from "@/components/badges";
-import type { GroupNode, LabelGroup, Sort, SortKey } from "@/lib/filter";
+import type { Issue } from "@/api"
+import {
+  LabelChip,
+  PriorityBadge,
+  StatusBadge,
+  TypeBadge,
+} from "@/components/badges"
+import type { GroupNode, LabelGroup, Sort, SortKey } from "@/lib/filter"
 
 function TitleCell({ i }: { i: Issue }) {
-  const labels = i.labels ?? [];
+  const labels = i.labels ?? []
   return (
     <td className="px-3 py-2" title={i.title}>
       <div className="flex min-w-0 items-center gap-2">
@@ -15,19 +20,21 @@ function TitleCell({ i }: { i: Issue }) {
           <LabelChip key={l} label={l} />
         ))}
         {labels.length > 3 ? (
-          <span className="shrink-0 text-muted text-xs">+{labels.length - 3}</span>
+          <span className="shrink-0 text-xs text-muted">
+            +{labels.length - 3}
+          </span>
         ) : null}
       </div>
     </td>
-  );
+  )
 }
 
 function fmtDate(ts?: string) {
   if (!ts) {
-    return "—";
+    return "—"
   }
-  const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? ts : d.toISOString().slice(0, 10);
+  const d = new Date(ts)
+  return Number.isNaN(d.getTime()) ? ts : d.toISOString().slice(0, 10)
 }
 
 const COLS: { key: SortKey; label: string; className?: string }[] = [
@@ -38,16 +45,24 @@ const COLS: { key: SortKey; label: string; className?: string }[] = [
   { key: "issue_type", label: "Type", className: "w-24" },
   { key: "assignee", label: "Assignee", className: "w-36" },
   { key: "updated_at", label: "Updated", className: "w-28 pr-5" },
-];
+]
 
-function Cells({ i, indent, rail }: { i: Issue; indent?: boolean; rail?: boolean }) {
+function Cells({
+  i,
+  indent,
+  rail,
+}: {
+  i: Issue
+  indent?: boolean
+  rail?: boolean
+}) {
   return (
     <>
-      <td className={`px-3 py-2 ${rail ? "border-accent/40 border-l-2" : ""}`}>
+      <td className={`px-3 py-2 ${rail ? "border-l-2 border-accent/40" : ""}`}>
         <PriorityBadge priority={i.priority} />
       </td>
       <td
-        className={`truncate px-3 py-2 font-mono text-accent text-xs ${indent ? "pl-8" : ""}`}
+        className={`truncate px-3 py-2 font-mono text-xs text-accent ${indent ? "pl-8" : ""}`}
         title={i.id}
       >
         {indent ? <span className="mr-1 text-muted">└</span> : null}
@@ -63,9 +78,11 @@ function Cells({ i, indent, rail }: { i: Issue; indent?: boolean; rail?: boolean
       <td className="truncate px-3 py-2 text-muted" title={i.assignee ?? ""}>
         {i.assignee ?? "—"}
       </td>
-      <td className="whitespace-nowrap py-2 pr-5 pl-3 text-muted">{fmtDate(i.updated_at)}</td>
+      <td className="py-2 pr-5 pl-3 whitespace-nowrap text-muted">
+        {fmtDate(i.updated_at)}
+      </td>
     </>
-  );
+  )
 }
 
 export function IssueTable({
@@ -76,22 +93,27 @@ export function IssueTable({
   onSortChange,
   onSelect,
 }: {
-  rows: Issue[];
-  groups?: GroupNode[];
-  labelGroups?: LabelGroup[];
-  sort: Sort;
-  onSortChange: (s: Sort) => void;
-  onSelect: (id: string) => void;
+  rows: Issue[]
+  groups?: GroupNode[]
+  labelGroups?: LabelGroup[]
+  sort: Sort
+  onSortChange: (s: Sort) => void
+  onSelect: (id: string) => void
 }) {
-  const [open, setOpen] = useState<Set<string>>(new Set());
-  const toggleSort = (key: SortKey) =>
-    onSortChange({ key, dir: sort.key === key && sort.dir === "asc" ? "desc" : "asc" });
-  const toggleEpic = (id: string) =>
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const toggleSort = (key: SortKey) => {
+    onSortChange({
+      key,
+      dir: sort.key === key && sort.dir === "asc" ? "desc" : "asc",
+    })
+  }
+  const toggleEpic = (id: string) => {
     setOpen((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="overflow-x-hidden rounded-lg border border-line">
@@ -101,11 +123,13 @@ export function IssueTable({
             {COLS.map((c) => (
               <th
                 key={c.key}
-                className={`whitespace-nowrap border-line border-b px-3 py-2 text-left font-medium text-muted ${c.className ?? ""}`}
+                className={`border-b border-line px-3 py-2 text-left font-medium whitespace-nowrap text-muted ${c.className ?? ""}`}
               >
                 <button
                   type="button"
-                  onClick={() => toggleSort(c.key)}
+                  onClick={() => {
+                    toggleSort(c.key)
+                  }}
                   className="inline-flex items-center gap-1 hover:text-text"
                 >
                   {c.label}
@@ -128,7 +152,9 @@ export function IssueTable({
                   key={g.label || "__unlabeled"}
                   group={g}
                   expanded={open.has(`lbl:${g.label}`)}
-                  onToggle={() => toggleEpic(`lbl:${g.label}`)}
+                  onToggle={() => {
+                    toggleEpic(`lbl:${g.label}`)
+                  }}
                   onSelect={onSelect}
                 />
               ))
@@ -137,8 +163,10 @@ export function IssueTable({
                   g.kind === "loose" ? (
                     <tr
                       key={g.issue.id}
-                      onClick={() => onSelect(g.issue.id)}
-                      className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+                      onClick={() => {
+                        onSelect(g.issue.id)
+                      }}
+                      className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
                     >
                       <Cells i={g.issue} />
                     </tr>
@@ -148,7 +176,9 @@ export function IssueTable({
                       epic={g.issue}
                       kids={g.children}
                       expanded={open.has(g.issue.id)}
-                      onToggle={() => toggleEpic(g.issue.id)}
+                      onToggle={() => {
+                        toggleEpic(g.issue.id)
+                      }}
                       onSelect={onSelect}
                     />
                   ),
@@ -156,8 +186,10 @@ export function IssueTable({
               : rows.map((i) => (
                   <tr
                     key={i.id}
-                    onClick={() => onSelect(i.id)}
-                    className="cursor-pointer border-line border-b last:border-0 hover:bg-surface2/50"
+                    onClick={() => {
+                      onSelect(i.id)
+                    }}
+                    className="cursor-pointer border-b border-line last:border-0 hover:bg-surface2/50"
                   >
                     <Cells i={i} />
                   </tr>
@@ -165,7 +197,7 @@ export function IssueTable({
         </tbody>
       </table>
     </div>
-  );
+  )
 }
 
 function EpicGroup({
@@ -175,22 +207,25 @@ function EpicGroup({
   onToggle,
   onSelect,
 }: {
-  epic: Issue;
-  kids: Issue[];
-  expanded: boolean;
-  onToggle: () => void;
-  onSelect: (id: string) => void;
+  epic: Issue
+  kids: Issue[]
+  expanded: boolean
+  onToggle: () => void
+  onSelect: (id: string) => void
 }) {
   return (
     <>
       <tr
         onClick={onToggle}
-        className="cursor-pointer border-line border-b bg-accent/10 hover:bg-accent/15"
+        className="cursor-pointer border-b border-line bg-accent/10 hover:bg-accent/15"
       >
-        <td className="border-accent border-l-2 px-3 py-2">
+        <td className="border-l-2 border-accent px-3 py-2">
           <PriorityBadge priority={epic.priority} />
         </td>
-        <td className="truncate px-3 py-2 font-mono text-accent text-xs" title={epic.id}>
+        <td
+          className="truncate px-3 py-2 font-mono text-xs text-accent"
+          title={epic.id}
+        >
           <span className="inline-flex items-center gap-1 font-semibold">
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             {epic.id}
@@ -200,14 +235,14 @@ function EpicGroup({
           <button
             type="button"
             onClick={(e) => {
-              e.stopPropagation();
-              onSelect(epic.id);
+              e.stopPropagation()
+              onSelect(epic.id)
             }}
             className="hover:text-accent"
           >
             {epic.title}
           </button>
-          <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 font-normal text-accent text-xs">
+          <span className="ml-2 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-normal text-accent">
             {kids.length} {kids.length === 1 ? "child" : "children"}
           </span>
         </td>
@@ -217,18 +252,27 @@ function EpicGroup({
         <td className="truncate px-3 py-2">
           <TypeBadge type={epic.issue_type} />
         </td>
-        <td className="truncate px-3 py-2 text-muted" title={epic.assignee ?? ""}>
+        <td
+          className="truncate px-3 py-2 text-muted"
+          title={epic.assignee ?? ""}
+        >
           {epic.assignee ?? "—"}
         </td>
-        <td className="whitespace-nowrap py-2 pr-5 pl-3 text-muted">{fmtDate(epic.updated_at)}</td>
+        <td className="py-2 pr-5 pl-3 whitespace-nowrap text-muted">
+          {fmtDate(epic.updated_at)}
+        </td>
       </tr>
       {expanded
         ? kids.map((c, idx) => (
             <tr
               key={c.id}
-              onClick={() => onSelect(c.id)}
+              onClick={() => {
+                onSelect(c.id)
+              }}
               className={`cursor-pointer bg-surface2/20 hover:bg-surface2/50 ${
-                idx === kids.length - 1 ? "border-accent/40 border-b-2" : "border-line border-b"
+                idx === kids.length - 1
+                  ? "border-b-2 border-accent/40"
+                  : "border-b border-line"
               }`}
             >
               <Cells i={c} indent rail />
@@ -236,7 +280,7 @@ function EpicGroup({
           ))
         : null}
     </>
-  );
+  )
 }
 
 function LabelSection({
@@ -245,17 +289,17 @@ function LabelSection({
   onToggle,
   onSelect,
 }: {
-  group: LabelGroup;
-  expanded: boolean;
-  onToggle: () => void;
-  onSelect: (id: string) => void;
+  group: LabelGroup
+  expanded: boolean
+  onToggle: () => void
+  onSelect: (id: string) => void
 }) {
-  const { label, issues } = group;
+  const { label, issues } = group
   return (
     <>
       <tr
         onClick={onToggle}
-        className="cursor-pointer border-line border-b bg-surface2/40 hover:bg-surface2/60"
+        className="cursor-pointer border-b border-line bg-surface2/40 hover:bg-surface2/60"
       >
         <td colSpan={7} className="px-3 py-2">
           <span className="inline-flex items-center gap-2 font-semibold">
@@ -265,7 +309,9 @@ function LabelSection({
             ) : (
               <span className="text-muted italic">unlabeled</span>
             )}
-            <span className="font-normal text-muted text-xs">{issues.length}</span>
+            <span className="text-xs font-normal text-muted">
+              {issues.length}
+            </span>
           </span>
         </td>
       </tr>
@@ -273,9 +319,13 @@ function LabelSection({
         ? issues.map((c, idx) => (
             <tr
               key={c.id}
-              onClick={() => onSelect(c.id)}
+              onClick={() => {
+                onSelect(c.id)
+              }}
               className={`cursor-pointer bg-surface2/10 hover:bg-surface2/50 ${
-                idx === issues.length - 1 ? "border-accent/40 border-b-2" : "border-line border-b"
+                idx === issues.length - 1
+                  ? "border-b-2 border-accent/40"
+                  : "border-b border-line"
               }`}
             >
               <Cells i={c} indent rail />
@@ -283,5 +333,5 @@ function LabelSection({
           ))
         : null}
     </>
-  );
+  )
 }

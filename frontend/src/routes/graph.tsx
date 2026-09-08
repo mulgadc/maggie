@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import {
   forceCenter,
   forceCollide,
@@ -10,15 +10,15 @@ import {
   type Simulation,
   type SimulationLinkDatum,
   type SimulationNodeDatum,
-} from "d3-force";
-import { select } from "d3-selection";
-import { zoom, type ZoomTransform, zoomIdentity } from "d3-zoom";
-import { useEffect, useMemo, useRef, useState } from "react";
+} from "d3-force"
+import { select } from "d3-selection"
+import { zoom, type ZoomTransform, zoomIdentity } from "d3-zoom"
+import { useEffect, useMemo, useRef, useState } from "react"
 
-import type { Issue, Status } from "@/api";
-import { labelHue } from "@/components/badges";
-import { applyFilters, paramsToFilters } from "@/lib/filter";
-import { useGraph, useIssues } from "@/queries";
+import type { Issue, Status } from "@/api"
+import { labelHue } from "@/components/badges"
+import { applyFilters, paramsToFilters } from "@/lib/filter"
+import { useGraph, useIssues } from "@/queries"
 
 const STATUS_VAR: Record<Status, string> = {
   open: "var(--color-st-open)",
@@ -26,82 +26,100 @@ const STATUS_VAR: Record<Status, string> = {
   blocked: "var(--color-st-blocked)",
   deferred: "var(--color-st-deferred)",
   closed: "var(--color-st-closed)",
-};
+}
 
 interface Node extends SimulationNodeDatum {
-  id: string;
-  title: string;
-  status: Status;
-  label?: string; // primary label, drives cluster placement
+  id: string
+  title: string
+  status: Status
+  label?: string // primary label, drives cluster placement
 }
 
 interface Link extends SimulationLinkDatum<Node> {
-  key: string;
-  dashed: boolean;
+  key: string
+  dashed: boolean
 }
 
 export const Route = createFileRoute("/graph")({
   component: Graph,
-});
+})
 
 function Graph() {
-  const navigate = useNavigate();
-  const search = Route.useSearch();
-  const { data: issues, isLoading: li } = useIssues();
-  const { data: edges, isLoading: le, error } = useGraph();
+  const navigate = useNavigate()
+  const search = Route.useSearch()
+  const { data: issues, isLoading: li } = useIssues()
+  const { data: edges, isLoading: le, error } = useGraph()
 
   // Apply the shared filter bar so the graph honours the same status/label/etc
   // filters as the table and board.
-  const filters = paramsToFilters(search);
-  const filtered = useMemo(() => applyFilters(issues ?? [], filters), [issues, filters]);
+  const filters = paramsToFilters(search)
+  const filtered = useMemo(
+    () => applyFilters(issues ?? [], filters),
+    [issues, filters],
+  )
 
-  const hasLabels = useMemo(() => filtered.some((i) => (i.labels ?? []).length > 0), [filtered]);
-  const [pref, setPref] = useState<boolean | null>(null);
-  const clustered = pref === null ? hasLabels : pref;
+  const hasLabels = useMemo(
+    () => filtered.some((i) => (i.labels ?? []).length > 0),
+    [filtered],
+  )
+  const [pref, setPref] = useState<boolean | null>(null)
+  const clustered = pref === null ? hasLabels : pref
 
   // Default graph shows only beads that carry an edge. Cluster mode instead
   // shows every labelled bead grouped into its label's bubble, so beads that
   // share a feature clump together even without a direct dependency. Both modes
   // are restricted to beads that pass the active filters.
   const { nodes, links } = useMemo(() => {
-    const byId = new Map<string, Issue>(filtered.map((i) => [i.id, i]));
-    let nodes: Node[];
+    const byId = new Map<string, Issue>(filtered.map((i) => [i.id, i]))
+    let nodes: Node[]
     if (clustered) {
       nodes = filtered
         .filter((i) => (i.labels ?? []).length > 0)
-        .map((i) => ({ id: i.id, title: i.title, status: i.status, label: i.labels?.[0] }));
+        .map((i) => ({
+          id: i.id,
+          title: i.title,
+          status: i.status,
+          label: i.labels?.[0],
+        }))
     } else {
-      const ids = new Set<string>();
+      const ids = new Set<string>()
       for (const e of edges ?? []) {
         if (byId.has(e.from) && byId.has(e.to)) {
-          ids.add(e.from);
-          ids.add(e.to);
+          ids.add(e.from)
+          ids.add(e.to)
         }
       }
       nodes = [...ids].map((id) => {
-        const i = byId.get(id);
-        return { id, title: i?.title ?? id, status: i?.status ?? "open" };
-      });
+        const i = byId.get(id)
+        return { id, title: i?.title ?? id, status: i?.status ?? "open" }
+      })
     }
-    const present = new Set(nodes.map((n) => n.id));
+    const present = new Set(nodes.map((n) => n.id))
     const links: Link[] = (edges ?? [])
       .filter((e) => present.has(e.from) && present.has(e.to))
-      .map((e) => ({ key: `${e.from}->${e.to}`, source: e.from, target: e.to, dashed: e.dashed }));
-    return { nodes, links };
-  }, [filtered, edges, clustered]);
+      .map((e) => ({
+        key: `${e.from}->${e.to}`,
+        source: e.from,
+        target: e.to,
+        dashed: e.dashed,
+      }))
+    return { nodes, links }
+  }, [filtered, edges, clustered])
 
   if (li || le) {
-    return <p className="text-muted">loading…</p>;
+    return <p className="text-muted">loading…</p>
   }
   if (error) {
-    return <p className="text-st-blocked">error: {error.message}</p>;
+    return <p className="text-st-blocked">error: {error.message}</p>
   }
   if (nodes.length === 0) {
     return (
       <p className="text-muted">
-        {clustered ? "no labelled beads to cluster" : "no dependencies to graph"}
+        {clustered
+          ? "no labelled beads to cluster"
+          : "no dependencies to graph"}
       </p>
-    );
+    )
   }
 
   return (
@@ -110,17 +128,21 @@ function Graph() {
       links={links}
       clustered={clustered}
       canCluster={hasLabels}
-      onToggleCluster={() => setPref(!clustered)}
-      onSelect={(id) => navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })}
+      onToggleCluster={() => {
+        setPref(!clustered)
+      }}
+      onSelect={async (id) =>
+        navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+      }
     />
-  );
+  )
 }
 
 interface Bubble {
-  label: string;
-  cx: number;
-  cy: number;
-  r: number;
+  label: string
+  cx: number
+  cy: number
+  r: number
 }
 
 function ForceGraph({
@@ -131,52 +153,57 @@ function ForceGraph({
   onToggleCluster,
   onSelect,
 }: {
-  nodes: Node[];
-  links: Link[];
-  clustered: boolean;
-  canCluster: boolean;
-  onToggleCluster: () => void;
-  onSelect: (id: string) => void;
+  nodes: Node[]
+  links: Link[]
+  clustered: boolean
+  canCluster: boolean
+  onToggleCluster: () => void
+  onSelect: (id: string) => void
 }) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const simRef = useRef<Simulation<Node, Link>>(null);
-  const [, setTick] = useState(0);
-  const [tf, setTf] = useState<ZoomTransform>(zoomIdentity);
-  const [size, setSize] = useState({ w: 800, h: 600 });
+  const svgRef = useRef<SVGSVGElement>(null)
+  const simRef = useRef<Simulation<Node, Link>>(null)
+  const [, setTick] = useState(0)
+  const [tf, setTf] = useState<ZoomTransform>(zoomIdentity)
+  const [size, setSize] = useState({ w: 800, h: 600 })
 
   // Distinct primary labels become the cluster anchors, laid out on a ring.
   const clusterLabels = useMemo(
-    () => [...new Set(nodes.map((n) => n.label).filter((l): l is string => !!l))].sort(),
+    () =>
+      [
+        ...new Set(nodes.map((n) => n.label).filter((l): l is string => !!l)),
+      ].sort(),
     [nodes],
-  );
+  )
   const centers = useMemo(() => {
-    const m = new Map<string, { x: number; y: number }>();
-    const cx = size.w / 2;
-    const cy = size.h / 2;
-    const r = Math.min(size.w, size.h) * 0.34;
+    const m = new Map<string, { x: number; y: number }>()
+    const cx = size.w / 2
+    const cy = size.h / 2
+    const r = Math.min(size.w, size.h) * 0.34
     clusterLabels.forEach((l, i) => {
       if (clusterLabels.length === 1) {
-        m.set(l, { x: cx, y: cy });
-        return;
+        m.set(l, { x: cx, y: cy })
+        return
       }
-      const a = (i / clusterLabels.length) * 2 * Math.PI - Math.PI / 2;
-      m.set(l, { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
-    });
-    return m;
-  }, [clusterLabels, size.w, size.h]);
+      const a = (i / clusterLabels.length) * 2 * Math.PI - Math.PI / 2
+      m.set(l, { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) })
+    })
+    return m
+  }, [clusterLabels, size.w, size.h])
 
   useEffect(() => {
-    const el = svgRef.current;
+    const el = svgRef.current
     if (!el) {
-      return;
+      return
     }
     const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setSize({ w: width, h: height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      const { width, height } = entry.contentRect
+      setSize({ w: width, h: height })
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+    }
+  }, [])
 
   useEffect(() => {
     const sim = forceSimulation(nodes)
@@ -187,72 +214,81 @@ function ForceGraph({
           .distance(clustered ? 55 : 90),
       )
       .force("charge", forceManyBody().strength(clustered ? -140 : -320))
-      .force("collide", forceCollide(clustered ? 20 : 28));
+      .force("collide", forceCollide(clustered ? 20 : 28))
     if (clustered) {
       const at = (n: Node, k: "x" | "y") =>
-        centers.get(n.label ?? "")?.[k] ?? size[k === "x" ? "w" : "h"] / 2;
+        centers.get(n.label ?? "")?.[k] ?? size[k === "x" ? "w" : "h"] / 2
       sim
         .force("x", forceX<Node>((n) => at(n, "x")).strength(0.25))
-        .force("y", forceY<Node>((n) => at(n, "y")).strength(0.25));
+        .force("y", forceY<Node>((n) => at(n, "y")).strength(0.25))
     } else {
-      sim.force("center", forceCenter(size.w / 2, size.h / 2));
+      sim.force("center", forceCenter(size.w / 2, size.h / 2))
     }
-    sim.on("tick", () => setTick((t) => t + 1));
-    simRef.current = sim;
+    sim.on("tick", () => {
+      setTick((t) => t + 1)
+    })
+    simRef.current = sim
     return () => {
-      sim.stop();
-    };
-  }, [nodes, links, size.w, size.h, clustered, centers]);
+      sim.stop()
+    }
+  }, [nodes, links, size.w, size.h, clustered, centers])
 
   useEffect(() => {
-    const el = svgRef.current;
+    const el = svgRef.current
     if (!el) {
-      return;
+      return
     }
     const z = zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 4])
-      .on("zoom", (e) => setTf(e.transform));
-    select(el).call(z);
+      .on("zoom", (e) => {
+        setTf(e.transform)
+      })
+    select(el).call(z)
     return () => {
-      select(el).on(".zoom", null);
-    };
-  }, []);
+      select(el).on(".zoom", null)
+    }
+  }, [])
 
   const drag = (n: Node) => (e: React.PointerEvent) => {
-    e.stopPropagation();
-    const sim = simRef.current;
+    e.stopPropagation()
+    const sim = simRef.current
     if (!sim) {
-      return;
+      return
     }
     const move = (ev: PointerEvent) => {
-      n.fx = tf.invertX(ev.offsetX);
-      n.fy = tf.invertY(ev.offsetY);
-      sim.alpha(0.3).restart();
-    };
+      n.fx = tf.invertX(ev.offsetX)
+      n.fy = tf.invertY(ev.offsetY)
+      sim.alpha(0.3).restart()
+    }
     const up = () => {
-      n.fx = null;
-      n.fy = null;
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
+      n.fx = null
+      n.fy = null
+      window.removeEventListener("pointermove", move)
+      window.removeEventListener("pointerup", up)
+    }
+    window.addEventListener("pointermove", move)
+    window.addEventListener("pointerup", up)
+  }
 
   // Bubbles are recomputed each tick from live node positions: a circle that
   // encloses every node sharing the primary label.
   const bubbles: Bubble[] = clustered
     ? clusterLabels.map((label) => {
-        const members = nodes.filter((n) => n.label === label && n.x != null && n.y != null);
+        const members = nodes.filter(
+          (n) => n.label === label && n.x != null && n.y != null,
+        )
         if (!members.length) {
-          return { label, cx: 0, cy: 0, r: 0 };
+          return { label, cx: 0, cy: 0, r: 0 }
         }
-        const cx = members.reduce((s, n) => s + (n.x ?? 0), 0) / members.length;
-        const cy = members.reduce((s, n) => s + (n.y ?? 0), 0) / members.length;
-        const r = Math.max(46, ...members.map((n) => Math.hypot((n.x ?? 0) - cx, (n.y ?? 0) - cy)));
-        return { label, cx, cy, r: r + 34 };
+        const cx = members.reduce((s, n) => s + (n.x ?? 0), 0) / members.length
+        const cy = members.reduce((s, n) => s + (n.y ?? 0), 0) / members.length
+        const r = Math.max(
+          46,
+          ...members.map((n) => Math.hypot((n.x ?? 0) - cx, (n.y ?? 0) - cy)),
+        )
+        return { label, cx, cy, r: r + 34 }
       })
-    : [];
+    : []
 
   return (
     <div className="relative h-full min-h-[280px] w-full overflow-hidden rounded-lg border border-line bg-panel">
@@ -272,7 +308,7 @@ function ForceGraph({
         </defs>
         <g transform={tf.toString()}>
           {bubbles.map((b) => {
-            const h = labelHue(b.label);
+            const h = labelHue(b.label)
             return (
               <g key={`bubble:${b.label}`} className="pointer-events-none">
                 <circle
@@ -295,11 +331,11 @@ function ForceGraph({
                   {b.label}
                 </text>
               </g>
-            );
+            )
           })}
           {links.map((l) => {
-            const s = l.source as Node;
-            const t = l.target as Node;
+            const s = l.source as Node
+            const t = l.target as Node
             return (
               <line
                 key={l.key}
@@ -313,7 +349,7 @@ function ForceGraph({
                 strokeDasharray={l.dashed ? "4 3" : undefined}
                 markerEnd="url(#arrow)"
               />
-            );
+            )
           })}
           {nodes.map((n) => (
             <g
@@ -321,15 +357,22 @@ function ForceGraph({
               transform={`translate(${n.x ?? 0},${n.y ?? 0})`}
               className="cursor-pointer"
               onPointerDown={drag(n)}
-              onClick={() => onSelect(n.id)}
+              onClick={() => {
+                onSelect(n.id)
+              }}
             >
-              <circle r={9} fill={STATUS_VAR[n.status]} stroke="var(--color-bg)" strokeWidth={2} />
+              <circle
+                r={9}
+                fill={STATUS_VAR[n.status]}
+                stroke="var(--color-bg)"
+                strokeWidth={2}
+              />
               <text
                 x={12}
                 y={4}
                 fontSize={11}
                 fill="var(--color-text)"
-                className="select-none font-mono"
+                className="font-mono select-none"
               >
                 {n.id}
               </text>
@@ -341,8 +384,10 @@ function ForceGraph({
       <div className="absolute bottom-3 left-3 flex gap-2">
         <button
           type="button"
-          onClick={() => setTf(zoomIdentity)}
-          className="rounded-md border border-line bg-bg/80 px-2 py-1 text-muted text-xs hover:text-text"
+          onClick={() => {
+            setTf(zoomIdentity)
+          }}
+          className="rounded-md border border-line bg-bg/80 px-2 py-1 text-xs text-muted hover:text-text"
         >
           reset view
         </button>
@@ -361,11 +406,17 @@ function ForceGraph({
         ) : null}
       </div>
     </div>
-  );
+  )
 }
 
 function Legend() {
-  const items: Status[] = ["open", "in_progress", "blocked", "deferred", "closed"];
+  const items: Status[] = [
+    "open",
+    "in_progress",
+    "blocked",
+    "deferred",
+    "closed",
+  ]
   return (
     <div className="absolute top-3 right-3 rounded-md border border-line bg-bg/80 px-3 py-2 text-xs">
       {items.map((s) => (
@@ -378,5 +429,5 @@ function Legend() {
         </div>
       ))}
     </div>
-  );
+  )
 }
