@@ -7,7 +7,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "oxlint && oxfmt --check",
-    "fix": "oxlint --fix; oxfmt"
+    "fix": "oxlint --fix; oxfmt",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.0",
@@ -36,6 +39,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^4.1.11",
     "eslint-plugin-react-you-might-not-need-an-effect": "^1.0.2",
     "oxc-transform-react": "^0.148.0",
     "oxfmt": "^0.66.0",
@@ -44,7 +48,8 @@
     "tailwindcss": "^4.3.1",
     "typescript": "7.0.2",
     "ultracite": "7.10.7",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.11"
   },
   "packageManager": "pnpm@12.3.4+sha512.961aa41fb077da3a04a441d9f8e15ebc0c96da8ef710b2eb67bf9ee7cb0610eabd48f1fd85f51cffe73846785fa0f87c56a3a872a1d893f8446741b5cce45457"
 }

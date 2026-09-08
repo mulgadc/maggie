@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { fileURLToPath, URL } from "node:url"
 
 import tailwindcss from "@tailwindcss/vite"
@@ -17,7 +18,7 @@ logger.warn = (msg, options) => {
   warn(msg, options)
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   customLogger: logger,
   build: {
     target: "es2023",
@@ -25,8 +26,12 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [
-    tanstackRouter({ target: "react", autoCodeSplitting: true }),
-    react({ compiler: true }),
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: true,
+      routeFileIgnorePattern: "\\.test\\.(ts|tsx)$",
+    }),
+    react({ compiler: mode !== "test" }),
     tailwindcss(),
   ],
   resolve: {
@@ -36,4 +41,17 @@ export default defineConfig({
     port: 3001,
     proxy: { "/api": "http://localhost:8088" },
   },
-})
+  // Only the pure logic in src/lib is under test, so the suite needs no DOM.
+  // Components and routes are covered by the build and by oxlint.
+  test: {
+    globals: true,
+    clearMocks: true,
+    coverage: {
+      include: ["src/lib/**/*.ts"],
+      // actor.ts is a localStorage hook and utils.ts wraps clsx; both are thin
+      // enough that a test would only assert the library's own behaviour.
+      exclude: ["src/lib/actor.ts", "src/lib/utils.ts"],
+      thresholds: { lines: 90 },
+    },
+  },
+}))

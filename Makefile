@@ -24,7 +24,7 @@ endif
 
 # Preflight — runs the same checks as GitHub Actions.
 preflight:
-	@$(MAKE) --no-print-directory QUIET=1 build lint lint-ui diff-coverage test-race govulncheck
+	@$(MAKE) --no-print-directory QUIET=1 build lint lint-ui test-ui diff-coverage test-race govulncheck
 	@echo -e "\n ✅ Preflight passed — safe to commit."
 
 # --- Build ---
@@ -33,10 +33,13 @@ preflight:
 build-ui:
 	cd frontend && pnpm install && pnpm build
 
-# Build the Go binary. go:embed cannot compile when cmd/maggie/web is absent,
-# so a clean checkout builds the frontend first. Run `make build-ui` to refresh it.
+# package main go:embeds cmd/maggie/web, which is generated rather than
+# committed, so it must exist before any go command that compiles it — tests
+# included, even though they serve their own fs.FS. Run build-ui to refresh it.
+ENSURE_UI = @[ -f cmd/maggie/web/index.html ] || $(MAKE) build-ui
+
 build:
-	@[ -f cmd/maggie/web/index.html ] || $(MAKE) build-ui
+	$(ENSURE_UI)
 	go build -ldflags "$(LDFLAGS)" -o $(GO_PROJECT_NAME) ./cmd/maggie
 
 # Run the server against a beads working dir (default: the current directory).
@@ -52,18 +55,21 @@ dev:
 # Run unit tests
 test:
 	@echo -e "\n....Running tests for $(GO_PROJECT_NAME)...."
+	$(ENSURE_UI)
 	go test -timeout 120s ./...
 
 # Run unit tests with coverage profile
 COVERPROFILE ?= coverage.out
 test-cover:
 	@echo -e "\n....Running tests with coverage for $(GO_PROJECT_NAME)...."
+	$(ENSURE_UI)
 	$(_Q)go test -timeout 120s -coverprofile=$(COVERPROFILE) -covermode=atomic ./... $(_COVQ)
 	@scripts/check-coverage.sh $(COVERPROFILE) $(QUIET)
 
 # Run unit tests with race detector
 test-race:
 	@echo -e "\n....Running tests with race detector for $(GO_PROJECT_NAME)...."
+	$(ENSURE_UI)
 	$(_Q)go test -race -timeout 300s ./... $(_RACEQ)
 
 # Check that new/changed code meets coverage threshold (runs tests first)
@@ -81,6 +87,13 @@ lint-ui:
 	@echo "Running oxlint..."
 	$(_Q)cd frontend && pnpm lint
 	@echo "  oxlint ok"
+
+# Frontend unit tests (vitest) with coverage. Only src/lib is in scope; the
+# components and routes are covered by the build and by oxlint.
+test-ui:
+	@echo "Running vitest..."
+	$(_Q)cd frontend && pnpm test:coverage
+	@echo "  vitest ok"
 
 # Auto-fix all linter issues that have fixers, both sides
 fix:
@@ -132,5 +145,5 @@ docker-refresh:
 	docker compose start dolt
 
 .PHONY: preflight build-ui build run dev test test-cover test-race diff-coverage \
-	lint lint-ui fix govulncheck clean docker-build docker-clean docker-seed \
+	lint lint-ui test-ui fix govulncheck clean docker-build docker-clean docker-seed \
 	docker-up docker-down docker-refresh docker-backup
