@@ -35,8 +35,9 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 `bd` is complete but text-only, and some questions are far easier to answer visually — what is blocked on what, which epic is stalling, where the work has piled up.
 
 - **No second source of truth.** Every read and write goes through `bd`, so validation, IDs, history and hooks behave exactly as they do on the command line. The server keeps no store of its own, which means nothing to back up, migrate or keep in sync.
-- **One binary to deploy.** The compiled frontend is embedded with `go:embed`. Copy it to a host, point it at a repo, done.
 - **Works on the repo you already have.** Point `MAGGIE_BEADS_DIR` at any checkout with a `.beads/` directory.
+- **Filtering that composes.** Text, id globs, priority, type, assignee, label and status, applied together rather than one at a time. One filter bar drives every view, and the filters live in the URL, so a view is a link you can share.
+- **A dependency graph.** Force-directed, blockers and parent/child drawn differently, optionally clustered by label. It shows what is holding a bead up in a way a list cannot.
 
 ## Screenshots
 
