@@ -16,7 +16,7 @@
   <a href="#why-maggie">Why Maggie?</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#build-from-source">Build from source</a> ·
-  <a href="#views">Views</a> ·
+  <a href="#screenshots">Screenshots</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#configuration">Configuration</a> ·
   <a href="#deployment">Deployment</a> ·
@@ -38,14 +38,23 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 - **One binary to deploy.** The compiled frontend is embedded with `go:embed`. Copy it to a host, point it at a repo, done.
 - **Works on the repo you already have.** Point `MAGGIE_BEADS_DIR` at any checkout with a `.beads/` directory.
 
-## Views
+## Screenshots
 
-| Route | What it shows |
-|-------|---------------|
-| `/` | Dashboard: a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated |
-| `/table` | Sortable, filterable issue table, groupable by epic or by label |
-| `/board` | Kanban board by status; drag a card to change status |
-| `/graph` | Force-directed dependency graph, solid edges for blockers and dashed for parent/child |
+**Dashboard** — a suggested work sequence, open issues by priority and by area, critical and high, ready to start, and recently updated. The sequence can be focused on one assignee or one issue-id prefix, so it shows a single person's or a single area's work.
+
+![Dashboard](.github/assets/screenshot-dashboard.png)
+
+**Table** — sortable and filterable, groupable by epic or by label, with the full bead open alongside it for editing.
+
+![Table](.github/assets/screenshot-table.png)
+
+**Board** — kanban by status; drag a card to change it.
+
+![Board](.github/assets/screenshot-board.png)
+
+**Graph** — force-directed dependencies, solid edges for blockers and dashed for parent/child, optionally clustered into label bubbles.
+
+![Graph](.github/assets/screenshot-graph.png)
 
 ## Quick Start
 
@@ -86,7 +95,7 @@ make build
 MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 ```
 
-`make build` runs the frontend build first — the compiled SPA is embedded with `go:embed`, so the result is one self-contained binary with no runtime assets to ship.
+The compiled SPA is embedded with `go:embed`, so the result is one self-contained binary with no runtime assets to ship. `make build` compiles the frontend only when it is missing; after editing anything under `frontend/`, run `make build-ui` to pick the change up.
 
 To build the container image instead:
 
