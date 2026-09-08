@@ -18,7 +18,6 @@
   <a href="#views">Views</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#configuration">Configuration</a> ·
-  <a href="#http-api">HTTP API</a> ·
   <a href="#docker">Docker</a> ·
   <a href="#development">Development</a> ·
   <a href="#security">Security</a>
@@ -28,20 +27,17 @@
 
 # Maggie: a fast web UI for Beads issue tracking.
 
-Maggie is a single Go binary that serves a web UI over [Beads](https://github.com/steveyegge/beads), the `bd` issue tracker. It reads through `bd ... --json` and writes back through `bd` as well, so every bead invariant the CLI enforces still holds when you drag a card across a board.
-
-The compiled frontend is embedded in the binary. There is nothing to deploy alongside it, no database of its own, and no runtime dependency beyond the `bd` binary itself.
+Maggie is a single Go binary that serves a web UI over [Beads](https://github.com/steveyegge/beads), the `bd` issue tracker.
 
 ## Why Maggie?
 
 `bd` is complete but text-only, and some questions are far easier to answer visually — what is blocked on what, which epic is stalling, where the work has piled up.
 
-- **No second source of truth.** Maggie never writes to your issue store directly. Every mutation shells out to `bd`, which means validation, IDs, history and hooks behave exactly as they do on the command line.
-- **One binary.** The React app is compiled into the Go executable with `go:embed`. Copy it to a host, point it at a repo, done.
-- **Zero Go dependencies.** The module graph is empty: only the standard library. No supply chain to audit and no outbound network calls.
+- **No second source of truth.** Every read and write goes through `bd`, so validation, IDs, history and hooks behave exactly as they do on the command line. The server keeps no store of its own, which means nothing to back up, migrate or keep in sync.
+- **One binary to deploy.** The compiled frontend is embedded with `go:embed`. Copy it to a host, point it at a repo, done.
 - **Works on the repo you already have.** Point `MAGGIE_BEADS_DIR` at any checkout with a `.beads/` directory.
 
-## Quick start
+## Quick Start
 
 **Prerequisites**
 
