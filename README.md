@@ -63,10 +63,6 @@ MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 
 Then open <http://localhost:8088>.
 
-`make all` is `make ui` followed by `make build`. The Vite output lands in `cmd/maggie/web`, which is a build artefact and is not tracked in git — `make build` will run `make ui` for you when it is missing, but a bare `go build ./cmd/maggie` on a fresh clone fails until it exists.
-
-To serve the repo you are standing in, `make run` does the build and starts the server with `MAGGIE_BEADS_DIR=.`.
-
 ## Views
 
 | Route | What it shows |
@@ -108,28 +104,6 @@ All configuration is environment variables. There is no config file.
 | `MAGGIE_ACTORS` | — | Comma-separated identity roster for the edit picker |
 
 Edits are attributed with `bd --actor`. Maggie has no login, so the identity is self-asserted: pick one from the `MAGGIE_ACTORS` roster or type your own. Leaving the roster unset just means everyone types a name.
-
-## HTTP API
-
-Reads:
-
-| Method | Path | Returns |
-|--------|------|---------|
-| `GET` | `/api/issues?status=&priority=&limit=&all=` | Issue list |
-| `GET` | `/api/ready` | Ready-to-work issues |
-| `GET` | `/api/issue?id=<id>` | One issue, with dependencies and comments |
-| `GET` | `/api/graph` | Dependency edges |
-| `GET` | `/api/actors` | The identity roster |
-
-Writes, all `POST` with a JSON body carrying `id` and `actor`:
-
-| Path | Body | Effect |
-|------|------|--------|
-| `/api/issue/update` | status, priority, assignee, description, notes, acceptance, label deltas | `bd update` |
-| `/api/issue/comment` | `text` | `bd comments add` |
-| `/api/issue/dep` | `depends_on`, `type` | `bd dep add`/`relate`, or reparent |
-
-Each write replies with the refreshed issue so the client can update its cache without a second round-trip. Omitted fields are left unchanged; an explicit empty assignee clears it.
 
 ## Docker
 
