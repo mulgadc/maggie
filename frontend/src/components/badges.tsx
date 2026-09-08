@@ -68,7 +68,7 @@ export function LabelChip({ label }: { label: string }) {
       style={{
         color: `hsl(${h} 70% 72%)`,
         backgroundColor: `hsl(${h} 70% 72% / 0.12)`,
-        // biome-ignore lint: ring colour via inline style for the dynamic hue
+        // The hue is derived per label, so the ring colour cannot be a class.
         ["--tw-ring-color" as string]: `hsl(${h} 70% 72% / 0.3)`,
       }}
     >

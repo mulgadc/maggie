@@ -50,7 +50,7 @@ function ChipEditor({
   if (editing && !disabled) {
     return (
       <select
-        // biome-ignore lint/a11y: transient inline editor
+        // Focus follows the click that opened this transient editor.
         autoFocus
         className={INPUT}
         value={value}
@@ -126,7 +126,7 @@ function InlineText({
     if (multiline) {
       return (
         <textarea
-          // biome-ignore lint/a11y: transient inline editor
+          // Focus follows the click that opened this transient editor.
           autoFocus
           className={`${INPUT} min-h-24 w-full resize-y`}
           value={draft}
@@ -147,7 +147,7 @@ function InlineText({
     return (
       <>
         <input
-          // biome-ignore lint/a11y: transient inline editor
+          // Focus follows the click that opened this transient editor.
           autoFocus
           list={suggestions ? listId : undefined}
           className={`${INPUT} w-full`}
@@ -356,7 +356,7 @@ export function LabelEditor({ issue, actor, issues }: Ctx) {
         }}
       >
         <input
-          // biome-ignore lint/a11y: transient inline editor
+          // Focus follows the click that opened this transient editor.
           autoFocus
           list={listId}
           className={`${INPUT} w-32`}
@@ -479,7 +479,7 @@ export function DepAdder({ issue, actor, issues }: Ctx) {
         ))}
       </select>
       <input
-        // biome-ignore lint/a11y: transient inline editor
+        // Focus follows the click that opened this transient editor.
         autoFocus
         className={`${INPUT} min-w-0 flex-1`}
         list={listId}
