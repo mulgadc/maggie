@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -514,6 +516,74 @@ func TestEnvOr(t *testing.T) {
 	t.Setenv("MAGGIE_TEST_ENV", "set")
 	if got := envOr("MAGGIE_TEST_ENV", "fallback"); got != "set" {
 		t.Errorf("envOr = %q, want set", got)
+	}
+}
+
+// listen picks a free loopback port so serve() can be driven for real.
+func listen(t *testing.T) (*http.Server, string) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	addr := ln.Addr().String()
+	if err := ln.Close(); err != nil {
+		t.Fatalf("close probe listener: %v", err)
+	}
+	return &http.Server{Addr: addr, ReadHeaderTimeout: time.Second}, "http://" + addr
+}
+
+func TestServeDrainsOnCancel(t *testing.T) {
+	srv, base := listen(t)
+	// The handler is still running when the shutdown signal lands, so a 418 on
+	// the client side proves Shutdown waited rather than cutting the connection.
+	entered := make(chan struct{})
+	released := make(chan struct{})
+	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		close(entered)
+		<-released
+		w.WriteHeader(http.StatusTeapot)
+	})
+
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- serve(ctx, srv) }()
+
+	codes := make(chan int, 1)
+	go func() { codes <- getWhenUp(base) }()
+
+	<-entered
+	cancel()
+	close(released)
+
+	if code := <-codes; code != http.StatusTeapot {
+		t.Errorf("in-flight request got %d, want %d — shutdown cut it short", code, http.StatusTeapot)
+	}
+	if err := <-done; err != nil {
+		t.Errorf("serve after cancel = %v, want nil", err)
+	}
+}
+
+// getWhenUp retries until serve's listener is accepting, then returns the status.
+func getWhenUp(base string) int {
+	for range 200 {
+		resp, err := http.Get(base + "/")
+		if err != nil {
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode
+	}
+	return 0
+}
+
+func TestServeReturnsListenError(t *testing.T) {
+	// Port 1 is privileged, so ListenAndServe fails immediately and the error
+	// must surface rather than being mistaken for a clean shutdown.
+	srv := &http.Server{Addr: "127.0.0.1:1", ReadHeaderTimeout: time.Second}
+	if err := serve(t.Context(), srv); err == nil {
+		t.Error("serve = nil, want the listen failure")
 	}
 }
 

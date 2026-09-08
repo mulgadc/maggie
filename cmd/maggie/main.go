@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -12,10 +13,12 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mulgadc/maggie/internal/beads"
@@ -60,10 +63,46 @@ func main() {
 
 	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
 	srv := &http.Server{Addr: addr, Handler: routes(bd, actors, sub), ReadHeaderTimeout: 10 * time.Second}
-	if err := srv.ListenAndServe(); err != nil {
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	if err := serve(ctx, srv); err != nil {
 		slog.Error("serve", "err", err)
 		os.Exit(1)
 	}
+}
+
+// shutdownGrace bounds the wait for in-flight requests once a signal arrives. A
+// bd write holds its own 15s timeout, so the grace period clears it and the
+// mutation lands rather than being killed halfway through.
+const shutdownGrace = 30 * time.Second
+
+// serve runs srv until it fails or ctx is cancelled, then drains in-flight
+// requests. ErrServerClosed is Shutdown's documented return once the drain has
+// been asked for, so it reports success rather than a failure to exit non-zero.
+func serve(ctx context.Context, srv *http.Server) error {
+	errCh := make(chan error, 1)
+	go func() {
+		err := srv.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			err = nil
+		}
+		errCh <- err
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+	}
+
+	slog.Info("shutdown signal received, draining in-flight requests")
+	drainCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
+	defer cancel()
+	if err := srv.Shutdown(drainCtx); err != nil {
+		return fmt.Errorf("shutdown: %w", err)
+	}
+	return <-errCh
 }
 
 // routes wires the bd-backed API and the embedded SPA onto a mux.
