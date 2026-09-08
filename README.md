@@ -132,8 +132,6 @@ make dev    # Vite on :3001, proxying /api -> :8088, with hot reload (terminal 2
 
 Run it on a trusted network, or behind an authenticating reverse proxy that terminates TLS. If you use the compose stack, keep the Dolt port (`3307`) internal and never publish it.
 
-The subprocess boundary is defended regardless. `bd` is invoked with an argv array rather than a shell string, so nothing is word-split or globbed. Every id, status, priority, actor, label and dependency type is checked against an allowlist regex before it can reach that call, request bodies are capped at 1 MiB, and each command runs under a timeout.
-
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Trademarks
