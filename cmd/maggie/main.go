@@ -52,7 +52,7 @@ func main() {
 	dir := envOr("MAGGIE_BEADS_DIR", ".")
 	bin := envOr("MAGGIE_BD_BIN", "bd")
 
-	bd := beads.New(bin, dir, 15*time.Second)
+	bd := beads.New(bin, dir, bdTimeout)
 	actors := splitActors(os.Getenv("MAGGIE_ACTORS"))
 
 	sub, err := fs.Sub(webFS, "web")
@@ -62,17 +62,32 @@ func main() {
 	}
 
 	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
-	srv := &http.Server{
-		Addr:              addr,
-		Handler:           securityHeaders(routes(bd, actors, sub)),
-		ReadHeaderTimeout: 10 * time.Second,
-	}
+	srv := httpServer(addr, securityHeaders(routes(bd, actors, sub)))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	if err := serve(ctx, srv); err != nil {
 		slog.Error("serve", "err", err)
 		os.Exit(1)
+	}
+}
+
+// bdTimeout caps a single bd invocation. The server's WriteTimeout is derived
+// from it, so a bd call that runs long fails as a bd error rather than as a
+// truncated response.
+const bdTimeout = 15 * time.Second
+
+// httpServer builds the listener's server with every timeout set. WriteTimeout
+// clears bdTimeout so a slow bd call still gets to answer; the rest bound how
+// long an idle or trickling connection can hold a slot.
+func httpServer(addr string, h http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           h,
+		ReadTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      bdTimeout + 15*time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 }
 

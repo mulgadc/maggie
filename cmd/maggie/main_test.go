@@ -543,6 +543,23 @@ func TestSPAHandlerCacheControl(t *testing.T) {
 	}
 }
 
+func TestHTTPServerTimeouts(t *testing.T) {
+	srv := httpServer(":8088", http.NewServeMux())
+	if srv.ReadTimeout == 0 || srv.ReadHeaderTimeout == 0 ||
+		srv.WriteTimeout == 0 || srv.IdleTimeout == 0 {
+		t.Errorf("a timeout is unset: read=%v header=%v write=%v idle=%v",
+			srv.ReadTimeout, srv.ReadHeaderTimeout, srv.WriteTimeout, srv.IdleTimeout)
+	}
+	// A WriteTimeout inside bd's own budget would truncate a slow read into a
+	// broken response instead of letting it fail as a bd error.
+	if srv.WriteTimeout <= bdTimeout {
+		t.Errorf("WriteTimeout %v does not clear bdTimeout %v", srv.WriteTimeout, bdTimeout)
+	}
+	if srv.ReadHeaderTimeout > srv.ReadTimeout {
+		t.Errorf("ReadHeaderTimeout %v exceeds ReadTimeout %v", srv.ReadHeaderTimeout, srv.ReadTimeout)
+	}
+}
+
 func TestSecurityHeaders(t *testing.T) {
 	h := securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
