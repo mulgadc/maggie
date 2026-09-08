@@ -1,10 +1,40 @@
 #!/usr/bin/env bash
-# Role dispatch for the maggie image: dolt | seed | maggie (default).
+# Role dispatch for the maggie image: local (default) | dolt | seed | maggie.
 set -euo pipefail
 
-role="${1:-maggie}"
+role="${1:-local}"
 
 case "$role" in
+  local)
+    # Serve a .beads directory mounted from the host. bd uses its embedded dolt
+    # engine, so the mounted directory is the database: no dolt server, no seed.
+    : "${MAGGIE_BEADS_DIR:=/repo}"
+    if [ ! -d "$MAGGIE_BEADS_DIR/.beads" ]; then
+      echo "maggie: no .beads directory at $MAGGIE_BEADS_DIR" >&2
+      echo "  mount one, for example:" >&2
+      echo "    -v \"\$PWD/.beads:/repo/.beads\"" >&2
+      exit 1
+    fi
+    # An arbitrary --user has no passwd entry, so HOME lands somewhere
+    # unwritable and bd cannot write its own state.
+    if [ ! -w "${HOME:-/}" ]; then
+      export HOME=/tmp
+    fi
+    # Writes land as the container user. As root under Docker that means
+    # root-owned files in the caller's repo; rootless podman maps back to the
+    # invoking user, so this is a warning rather than a refusal.
+    if [ "$(id -u)" = "0" ] && [ -z "${MAGGIE_ALLOW_ROOT:-}" ]; then
+      echo "maggie: running as root — writes will be root-owned on the host." >&2
+      echo "  pass --user \$(id -u):\$(id -g) to keep your own ownership." >&2
+    fi
+    # bd embeds the schema it expects. A client older or newer than the one
+    # that wrote the directory is the documented way to corrupt it.
+    echo "maggie: serving $MAGGIE_BEADS_DIR/.beads with $(bd version 2>/dev/null | head -1)" >&2
+    export MAGGIE_BEADS_DIR
+    export MAGGIE_BD_BIN=bd
+    exec maggie
+    ;;
+
   dolt)
     # Serve the imported Dolt database. Seed must run at least once first.
     mkdir -p "$DOLT_DATA"

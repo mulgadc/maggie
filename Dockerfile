@@ -59,6 +59,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
  && git config --system user.email maggie@localhost \
  && git config --system --add safe.directory '*'
 ENV MAGGIE_ADDR=:8088 \
+    MAGGIE_BEADS_DIR=/repo \
     DOLT_HOST=dolt \
     DOLT_PORT=3307 \
     BEADS_PREFIX=beads \
@@ -67,4 +68,6 @@ ENV MAGGIE_ADDR=:8088 \
     SNAPSHOT=/snapshot/issues.jsonl
 EXPOSE 8088 3307
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["maggie"]
+# Default to serving a .beads directory mounted at /repo. The compose stack
+# overrides this with the dolt/seed/maggie roles for the shared-server setup.
+CMD ["local"]
