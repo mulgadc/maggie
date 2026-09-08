@@ -54,13 +54,13 @@ COPY --from=bd-build     /go/bin/bd          /usr/local/bin/bd
 COPY --from=dolt-fetch   /usr/local/bin/dolt /usr/local/bin/dolt
 COPY docker/entrypoint.sh                    /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh \
- && git config --system user.name  banksia-beads \
- && git config --system user.email engineering@mulgadc.com \
+ && git config --system user.name  maggie \
+ && git config --system user.email maggie@localhost \
  && git config --system --add safe.directory '*'
 ENV MAGGIE_ADDR=:8088 \
     DOLT_HOST=dolt \
     DOLT_PORT=3307 \
-    BEADS_PREFIX=mulga \
+    BEADS_PREFIX=beads \
     DOLT_DATA=/data/dolt \
     CLIENT_DIR=/client \
     SNAPSHOT=/snapshot/issues.jsonl

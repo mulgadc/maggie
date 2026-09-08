@@ -5,20 +5,24 @@
 # source of truth and is untouched.
 #
 # Usage:
-#   ./beads-server-banksia.sh seed   /path/to/issues.jsonl   # one-time import
-#   ./beads-server-banksia.sh serve                          # run sql-server
+#   ./beads-server.sh seed   /path/to/issues.jsonl   # one-time import
+#   ./beads-server.sh serve                          # run sql-server
 #
 # Env (override as needed):
-#   DATA_DIR   server working dir            (default: $HOME/beads-server)
-#   BIND_HOST  sql-server listen address     (default: 127.0.0.1)
-#   PORT       sql-server port               (default: 3307)
-#   PREFIX     beads issue prefix            (default: mulga)
+#   DATA_DIR    server working dir           (default: $HOME/beads-server)
+#   BIND_HOST   sql-server listen address    (default: 127.0.0.1)
+#   PORT        sql-server port              (default: 3307)
+#   PREFIX      beads issue prefix           (default: beads)
+#   GIT_NAME    seed commit author name      (default: maggie)
+#   GIT_EMAIL   seed commit author email     (default: maggie@localhost)
 set -euo pipefail
 
 DATA_DIR="${DATA_DIR:-$HOME/beads-server}"
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
 PORT="${PORT:-3307}"
-PREFIX="${PREFIX:-mulga}"
+PREFIX="${PREFIX:-beads}"
+GIT_NAME="${GIT_NAME:-maggie}"
+GIT_EMAIL="${GIT_EMAIL:-maggie@localhost}"
 DOLT_DATA="$DATA_DIR/.beads/dolt"
 
 need() { command -v "$1" >/dev/null || { echo "missing: $1" >&2; exit 1; }; }
@@ -34,8 +38,8 @@ seed() {
   # bd scopes reads by repo id, so the working dir must be a git repo.
   mkdir -p "$DATA_DIR/.beads"
   git -C "$DATA_DIR" init -q
-  git -C "$DATA_DIR" config user.name  "banksia-beads"
-  git -C "$DATA_DIR" config user.email "engineering@mulgadc.com"
+  git -C "$DATA_DIR" config user.name  "$GIT_NAME"
+  git -C "$DATA_DIR" config user.email "$GIT_EMAIL"
   cp "$jsonl" "$DATA_DIR/.beads/issues.jsonl"
   git -C "$DATA_DIR" add -A
   git -C "$DATA_DIR" commit -qm "seed snapshot"

@@ -1,4 +1,4 @@
-// Command maggie serves a read-only web UI over the Beads `bd` CLI.
+// Command maggie serves a web UI over the Beads `bd` CLI.
 package main
 
 import (
@@ -19,13 +19,6 @@ import (
 	"github.com/mulgadc/maggie/internal/roster"
 )
 
-// fallbackActors seeds the identity picker when the GitHub org member list is
-// unavailable. Org membership is private by default, so the unauthenticated API
-// returns an empty list; without a read:org token this static roster is used.
-var fallbackActors = []string{
-	"benduncan", "brynmailer-mdc", "Jai808", "joshsiv-mulga", "juliansommer", "tomnewton-mulga",
-}
-
 //go:embed web
 var webFS embed.FS
 
@@ -44,7 +37,7 @@ func main() {
 	bin := envOr("MAGGIE_BD_BIN", "bd")
 
 	bd := beads.New(bin, dir, 15*time.Second)
-	rf := roster.New(envOr("GITHUB_ORG", "mulgadc"), os.Getenv("GITHUB_TOKEN"), fallbackActors)
+	rf := roster.New(os.Getenv("GITHUB_ORG"), os.Getenv("GITHUB_TOKEN"), splitActors(os.Getenv("MAGGIE_ACTORS")))
 
 	sub, err := fs.Sub(webFS, "web")
 	if err != nil {
@@ -296,6 +289,19 @@ func jsonHandler(fn func(*http.Request) ([]byte, error)) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(out)
 	}
+}
+
+// splitActors parses MAGGIE_ACTORS, a comma-separated roster used when no
+// GitHub org is configured or its member list is unreachable. Always non-nil so
+// /api/actors encodes [] rather than null.
+func splitActors(s string) []string {
+	out := []string{}
+	for _, a := range strings.Split(s, ",") {
+		if a = strings.TrimSpace(a); a != "" {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 func envOr(k, def string) string {

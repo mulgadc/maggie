@@ -11,9 +11,9 @@ build:
 # Build everything from clean.
 all: ui build
 
-# Run the server against a beads working dir (default: mulga).
+# Run the server against a beads working dir (default: the current directory).
 run: build
-	MAGGIE_BEADS_DIR=$${MAGGIE_BEADS_DIR:-$$HOME/Development/mulga} ./maggie
+	MAGGIE_BEADS_DIR=$${MAGGIE_BEADS_DIR:-.} ./maggie
 
 # Frontend dev server with API proxy to a running Go backend on :8088.
 dev:

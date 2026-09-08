@@ -4,18 +4,31 @@ import { useState } from "react"
 import { useActor } from "@/lib/actor"
 import { useActors } from "@/queries"
 
-// ActorMenu is the header identity picker. It sets the GitHub username sent as
-// bd --actor on writes, chosen from the org roster (/api/actors). maggie has no
-// login; this is a self-asserted audit label persisted locally.
+// ACTOR_RE mirrors the server's actor validation, so a name the backend would
+// reject never reaches it.
+const ACTOR_RE = /^[A-Za-z0-9-]{1,39}$/
+
+// ActorMenu is the header identity picker. It sets the username sent as
+// bd --actor on writes, either typed or chosen from the roster (/api/actors).
+// maggie has no login; this is a self-asserted audit label persisted locally.
 export function ActorMenu() {
   const [actor, setActor] = useActor()
   const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState("")
   const { data } = useActors()
   const roster = data ?? []
 
   const pick = (v: string) => {
     setActor(v)
     setOpen(false)
+  }
+
+  const submitDraft = () => {
+    const v = draft.trim()
+    if (ACTOR_RE.test(v)) {
+      setDraft("")
+      pick(v)
+    }
   }
 
   return (
@@ -49,6 +62,21 @@ export function ActorMenu() {
             }}
           />
           <div className="absolute right-0 z-30 mt-1 flex w-56 flex-col gap-0.5 rounded-lg border border-line bg-panel p-1.5 shadow-2xl">
+            <input
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  submitDraft()
+                }
+              }}
+              onBlur={submitDraft}
+              placeholder="type a username"
+              aria-label="identity"
+              className="mb-1 rounded border border-line bg-surface2 px-2 py-1 text-sm outline-none placeholder:text-muted focus:border-accent"
+            />
             {roster.map((a) => (
               <button
                 key={a}

@@ -27,11 +27,12 @@ services:
       # DOLT_USER=root to fall back to the full-privilege break-glass account.
       DOLT_USER: "${DOLT_USER:-beads}"
       DOLT_PASSWORD: "${DOLT_PASSWORD:-}"
-      # Identity roster for edits: members of this GitHub org seed the "acting as"
-      # picker. Org membership is private by default, so without a read:org
-      # GITHUB_TOKEN the API returns nothing and maggie uses its built-in static
-      # roster. A token makes the list dynamic (auto-tracks the org).
-      GITHUB_ORG: "${GITHUB_ORG:-mulgadc}"
+      # Identity roster for edits, seeding the "acting as" picker. MAGGIE_ACTORS
+      # is a comma-separated static list. Set GITHUB_ORG to source it from an org
+      # instead; membership is private by default, so that needs a read:org
+      # GITHUB_TOKEN. With neither set, users type their own name.
+      MAGGIE_ACTORS: "${MAGGIE_ACTORS:-}"
+      GITHUB_ORG: "${GITHUB_ORG:-}"
       GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
     ports:
       # Serve on host port 80 so the team can reach it by hostname (no :port).

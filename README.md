@@ -13,7 +13,7 @@ Reads come from the `bd` CLI (`bd ... --json`); writes (e.g. drag-and-drop statu
 
 ```bash
 make all     # build frontend -> embed -> build Go binary
-make run     # build + serve (default MAGGIE_BEADS_DIR=$HOME/Development/mulga)
+make run     # build + serve the repo in the current dir (MAGGIE_BEADS_DIR=.)
 # open http://localhost:8088
 ```
 
@@ -28,11 +28,18 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 
 ## Config (env)
 
-| Var                 | Default | Description                          |
-|---------------------|---------|--------------------------------------|
-| `MAGGIE_ADDR`      | `:8088` | Listen address                       |
-| `MAGGIE_BEADS_DIR` | `.`     | Working dir containing `.beads/`     |
-| `MAGGIE_BD_BIN`    | `bd`    | Path to the `bd` binary              |
+| Var                 | Default | Description                                         |
+|---------------------|---------|-----------------------------------------------------|
+| `MAGGIE_ADDR`      | `:8088` | Listen address                                       |
+| `MAGGIE_BEADS_DIR` | `.`     | Working dir containing `.beads/`                     |
+| `MAGGIE_BD_BIN`    | `bd`    | Path to the `bd` binary                              |
+| `MAGGIE_ACTORS`    | —       | Comma-separated identity roster for the edit picker  |
+| `GITHUB_ORG`       | —       | Source the roster from a GitHub org's members        |
+| `GITHUB_TOKEN`     | —       | PAT with `read:org`; needed for private membership   |
+
+Edits are attributed with `bd --actor`. maggie has no login, so the identity is
+self-asserted: pick one from the roster or type it in. With neither
+`MAGGIE_ACTORS` nor `GITHUB_ORG` set, the roster is empty and users type a name.
 
 ## Endpoints
 
@@ -49,7 +56,7 @@ Packages maggie, `bd`, and `dolt` into one image; compose runs a dolt server plu
 ```bash
 # 1. drop a snapshot of the source-of-truth jsonl
 mkdir -p snapshot
-cp $HOME/Development/mulga/.beads/issues.jsonl snapshot/issues.jsonl
+cp /path/to/your/repo/.beads/issues.jsonl snapshot/issues.jsonl
 
 # 2. build + seed + run
 make docker-build
