@@ -17,7 +17,7 @@ make run     # build + serve the repo in the current dir (MAGGIE_BEADS_DIR=.)
 # open http://localhost:8088
 ```
 
-The Go binary embeds `cmd/maggie/web` (the Vite build output). `make build` alone works only after `make ui` has produced that output at least once.
+The Go binary embeds `cmd/maggie/web`, the Vite build output. That directory is a build artefact and is not in git, so `make build` runs `make ui` for you when it is missing. A bare `go build ./cmd/maggie` on a fresh clone fails until it exists.
 
 ## Frontend dev (hot reload)
 

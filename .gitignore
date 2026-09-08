@@ -1,6 +1,11 @@
 /maggie
 *.log
 .DS_Store
+.env
+
+# Vite build output, embedded into the binary by go:embed. Build artefact, not
+# source — `make build` regenerates it when missing.
+cmd/maggie/web/
 
 # Node
 frontend/dist/

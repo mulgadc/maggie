@@ -4,9 +4,13 @@
 ui:
 	cd frontend && pnpm install && pnpm build
 
-# Build the Go binary (embeds whatever is in cmd/maggie/web).
-build:
+# Build the Go binary (embeds whatever is in cmd/maggie/web). go:embed fails to
+# compile when that dir is absent, so a clean checkout builds the frontend first.
+build: cmd/maggie/web/index.html
 	go build -o maggie ./cmd/maggie
+
+cmd/maggie/web/index.html:
+	$(MAKE) ui
 
 # Build everything from clean.
 all: ui build
