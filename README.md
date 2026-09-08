@@ -132,10 +132,6 @@ make run    # backend on :8088          (terminal 1)
 make dev    # Vite on :3001, proxying /api -> :8088, with hot reload (terminal 2)
 ```
 
-`make preflight` must pass before you commit. It runs `golangci-lint`, the frontend lint and format checks, and a full build. `make fix` auto-fixes what has a fixer on both sides.
-
-The frontend is React 19 with TanStack Router and Query, Tailwind 4 and Vite, built with the React Compiler enabled. Linting and formatting are oxlint and oxfmt.
-
 ## Security
 
 **Maggie has no authentication.** Anyone who can reach the port can read and modify every issue in the store.
