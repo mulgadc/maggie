@@ -232,13 +232,12 @@ func routes(bd *beads.Client, actors []string, web fs.FS) *http.ServeMux {
 	return mux
 }
 
-// Content-Security-Policy header. Everything the SPA needs is same-origin
-// except the display font, which index.html pulls from Google Fonts. No HSTS or
+// Content-Security-Policy header. Everything the SPA needs is same-origin,
+// fonts included, so the page makes no third-party request. No HSTS or
 // upgrade-insecure-requests: maggie serves plain HTTP and expects a reverse
 // proxy to terminate TLS, so either would break a direct http:// deployment.
-const csp = "default-src 'self'; script-src 'self'; " +
-	"style-src 'self' https://fonts.googleapis.com; " +
-	"img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; " +
+const csp = "default-src 'self'; script-src 'self'; style-src 'self'; " +
+	"img-src 'self' data:; font-src 'self'; " +
 	"connect-src 'self'; object-src 'none'; base-uri 'self'; " +
 	"form-action 'self'; frame-ancestors 'none';"
 

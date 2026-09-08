@@ -93,12 +93,14 @@ function RootLayout() {
         <div className="flex items-center gap-3">
           <img
             src="/maggie.png"
-            alt="maggie"
+            alt="maggie logo"
             className="h-20 w-auto rounded-lg object-contain"
           />
           <div className="flex flex-col leading-none">
-            <h1 className="font-display text-4xl text-accent lowercase">
-              maggie
+            {/* The wordmark is a display typeface traced to paths, which costs
+                a fraction of shipping the font to set one word. */}
+            <h1>
+              <img src="/wordmark.svg" alt="maggie" className="h-9 w-auto" />
             </h1>
             <span className="mt-1.5 text-xs tracking-[0.2em] text-muted lowercase [text-align-last:justify]">
               bead enthusiast

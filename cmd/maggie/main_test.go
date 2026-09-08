@@ -662,13 +662,19 @@ func TestSecurityHeaders(t *testing.T) {
 	}
 }
 
-// The SPA loads its display font from Google Fonts, so a policy that allowed
-// only 'self' would silently drop the header typeface.
-func TestCSPAllowsTheFontOriginsIndexNeeds(t *testing.T) {
-	for _, origin := range []string{"https://fonts.googleapis.com", "https://fonts.gstatic.com"} {
-		if !strings.Contains(csp, origin) {
-			t.Errorf("csp does not allow %s, which index.html loads", origin)
-		}
+// Fonts are self-hosted, so the page makes no third-party request. Both halves
+// are asserted: the policy names no external origin, and the shipped index.html
+// asks for none either, so neither can drift back without the other noticing.
+func TestCSPIsSameOriginOnly(t *testing.T) {
+	if strings.Contains(csp, "//") {
+		t.Errorf("csp allows an external origin: %s", csp)
+	}
+	index, err := webFS.ReadFile("web/index.html")
+	if err != nil {
+		t.Fatalf("read embedded index.html: %v", err)
+	}
+	if strings.Contains(string(index), "https://") {
+		t.Error("index.html loads a third-party resource, which the csp now blocks")
 	}
 	// Serving plain HTTP behind a TLS-terminating proxy: an upgrade directive
 	// would break a direct http:// deployment.
