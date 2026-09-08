@@ -9,7 +9,7 @@ import { useActors } from "@/queries"
 const ACTOR_RE = /^[A-Za-z0-9-]{1,39}$/
 
 // ActorMenu is the header identity picker. It sets the username sent as
-// bd --actor on writes, either typed or chosen from the roster (/api/actors).
+// bd --actor on writes, either typed or chosen from MAGGIE_ACTORS (/api/actors).
 // maggie has no login; this is a self-asserted audit label persisted locally.
 export function ActorMenu() {
   const [actor, setActor] = useActor()

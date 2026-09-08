@@ -34,12 +34,10 @@ make dev          # Vite dev server on :3001, proxies /api -> :8088 (terminal 2)
 | `MAGGIE_BEADS_DIR` | `.`     | Working dir containing `.beads/`                     |
 | `MAGGIE_BD_BIN`    | `bd`    | Path to the `bd` binary                              |
 | `MAGGIE_ACTORS`    | —       | Comma-separated identity roster for the edit picker  |
-| `GITHUB_ORG`       | —       | Source the roster from a GitHub org's members        |
-| `GITHUB_TOKEN`     | —       | PAT with `read:org`; needed for private membership   |
 
 Edits are attributed with `bd --actor`. maggie has no login, so the identity is
-self-asserted: pick one from the roster or type it in. With neither
-`MAGGIE_ACTORS` nor `GITHUB_ORG` set, the roster is empty and users type a name.
+self-asserted: pick one from the `MAGGIE_ACTORS` roster or type it in. Leaving
+the roster unset just means everyone types their own name.
 
 ## Endpoints
 

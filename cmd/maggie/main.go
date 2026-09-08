@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/mulgadc/maggie/internal/beads"
-	"github.com/mulgadc/maggie/internal/roster"
 )
 
 //go:embed web
@@ -38,7 +37,7 @@ func main() {
 	bin := envOr("MAGGIE_BD_BIN", "bd")
 
 	bd := beads.New(bin, dir, 15*time.Second)
-	rf := roster.New(os.Getenv("GITHUB_ORG"), os.Getenv("GITHUB_TOKEN"), splitActors(os.Getenv("MAGGIE_ACTORS")))
+	actors := splitActors(os.Getenv("MAGGIE_ACTORS"))
 
 	sub, err := fs.Sub(webFS, "web")
 	if err != nil {
@@ -61,9 +60,9 @@ func main() {
 		}
 		return bd.Show(r.Context(), id)
 	}))
-	mux.HandleFunc("/api/actors", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/actors", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(rf.Members(r.Context())); err != nil {
+		if err := json.NewEncoder(w).Encode(actors); err != nil {
 			slog.Error("actors encode", "err", err)
 		}
 	})
@@ -292,9 +291,9 @@ func jsonHandler(fn func(*http.Request) ([]byte, error)) http.HandlerFunc {
 	}
 }
 
-// splitActors parses MAGGIE_ACTORS, a comma-separated roster used when no
-// GitHub org is configured or its member list is unreachable. Always non-nil so
-// /api/actors encodes [] rather than null.
+// splitActors parses MAGGIE_ACTORS, the comma-separated roster offered by the
+// identity picker. Always non-nil so /api/actors encodes [] rather than null;
+// an empty roster just means users type their own name.
 func splitActors(s string) []string {
 	out := []string{}
 	for a := range strings.SplitSeq(s, ",") {
