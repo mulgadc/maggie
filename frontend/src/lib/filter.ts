@@ -115,7 +115,7 @@ export function sortIssues(issues: Issue[], s: Sort): Issue[] {
 
 export const DEFAULT_SORT: Sort = { key: "priority", dir: "asc" }
 
-const SORT_KEYS = new Set<SortKey>([
+const SORT_KEYS: SortKey[] = [
   "id",
   "title",
   "status",
@@ -124,7 +124,7 @@ const SORT_KEYS = new Set<SortKey>([
   "assignee",
   "updated_at",
   "created_at",
-])
+]
 
 // TableSearch is the URL query-string shape (compact keys), all optional so a
 // bare URL means "defaults".
@@ -161,10 +161,33 @@ export function paramsToFilters(s: TableSearch): Filters {
 
 export function paramsToSort(s: TableSearch): Sort {
   return {
-    key: s.sort && SORT_KEYS.has(s.sort) ? s.sort : DEFAULT_SORT.key,
+    key: toSortKey(s.sort) ?? DEFAULT_SORT.key,
     dir: s.dir === "desc" ? "desc" : "asc",
   }
 }
+
+// toSortKey / toSortDir / toGroupMode narrow raw URL or form values onto their
+// domain type, returning undefined when the value is not one of them. They are
+// the parse boundary, so unknown input is the point.
+/* oxlint-disable anti-slop/no-unknown-parameters -- these functions are the parser */
+export function toSortKey(v: unknown): SortKey | undefined {
+  return SORT_KEYS.find((k) => k === v)
+}
+
+export function toSortDir(v: unknown): Sort["dir"] | undefined {
+  if (v === "asc" || v === "desc") {
+    return v
+  }
+  return undefined
+}
+
+export function toGroupMode(v: unknown): GroupMode | undefined {
+  return GROUP_MODES.find((m) => m === v)
+}
+
+/* oxlint-enable anti-slop/no-unknown-parameters */
+
+const GROUP_MODES: GroupMode[] = ["none", "epic", "label"]
 
 // filtersToParams / sortToParams emit only non-default values so shared URLs
 // stay short. Defaults map to undefined, which removes the key on navigate.

@@ -15,32 +15,38 @@ import {
   type GroupMode,
   paramsToFilters,
   type TableSearch,
+  toGroupMode,
+  toSortDir,
+  toSortKey,
 } from "@/lib/filter"
 
 interface RootSearch extends TableSearch {
   issue?: string
 }
 
+// str keeps a query param only when the URL actually carried a string.
+/* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-runtime-typeof -- this is the URL parse boundary */
+function str(v: unknown): string | undefined {
+  return typeof v === "string" ? v : undefined
+}
+/* oxlint-enable anti-slop/no-unknown-parameters, anti-slop/no-runtime-typeof */
+
 export const Route = createRootRoute({
+  // validateSearch is the parse boundary: the router hands over raw URL params
+  // and every field is narrowed onto RootSearch here.
+  // oxlint-disable-next-line anti-slop/no-unsafe-dictionary-type -- the router types the raw params this way
   validateSearch: (search: Record<string, unknown>): RootSearch => ({
-    issue: typeof search.issue === "string" ? search.issue : undefined,
-    q: typeof search.q === "string" ? search.q : undefined,
-    idg: typeof search.idg === "string" ? search.idg : undefined,
-    st: typeof search.st === "string" ? search.st : undefined,
+    issue: str(search.issue),
+    q: str(search.q),
+    idg: str(search.idg),
+    st: str(search.st),
     pri: search.pri === undefined ? undefined : Number(search.pri),
-    type: typeof search.type === "string" ? search.type : undefined,
-    asgn: typeof search.asgn === "string" ? search.asgn : undefined,
-    lbl: typeof search.lbl === "string" ? search.lbl : undefined,
-    sort:
-      typeof search.sort === "string"
-        ? (search.sort as TableSearch["sort"])
-        : undefined,
-    dir:
-      search.dir === "desc" ? "desc" : search.dir === "asc" ? "asc" : undefined,
-    group:
-      search.group === "epic" || search.group === "label"
-        ? (search.group as GroupMode)
-        : undefined,
+    type: str(search.type),
+    asgn: str(search.asgn),
+    lbl: str(search.lbl),
+    sort: toSortKey(search.sort),
+    dir: toSortDir(search.dir),
+    group: toGroupMode(search.group),
   }),
   component: RootLayout,
 })
@@ -58,18 +64,25 @@ function RootLayout() {
   const search = Route.useSearch()
   const filters = paramsToFilters(search)
 
-  const closeDetail = async () =>
-    navigate({ to: ".", search: (s) => ({ ...s, issue: undefined }) })
-  const openIssue = async (open: string) =>
-    navigate({ to: ".", search: (s) => ({ ...s, issue: open }) })
-  const onFilters = async (f: Filters) =>
-    navigate({ to: ".", search: (s) => ({ ...s, ...filtersToParams(f) }) })
+  const closeDetail = async () => {
+    await navigate({ to: ".", search: (s) => ({ ...s, issue: undefined }) })
+  }
+  const openIssue = async (open: string) => {
+    await navigate({ to: ".", search: (s) => ({ ...s, issue: open }) })
+  }
+  const onFilters = async (f: Filters) => {
+    await navigate({
+      to: ".",
+      search: (s) => ({ ...s, ...filtersToParams(f) }),
+    })
+  }
   const groupMode: GroupMode = search.group ?? "none"
-  const onGroupMode = async (m: GroupMode) =>
-    navigate({
+  const onGroupMode = async (m: GroupMode) => {
+    await navigate({
       to: ".",
       search: (s) => ({ ...s, group: m === "none" ? undefined : m }),
     })
+  }
 
   const showFilters = pathname !== "/"
   const isTable = pathname === "/table"

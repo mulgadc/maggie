@@ -148,5 +148,10 @@ export async function addDep(
   dependsOn: string,
   type: DepType,
 ): Promise<Issue | undefined> {
-  return await postJSON("/api/issue/dep", { id, actor, depends_on: dependsOn, type })
+  return await postJSON("/api/issue/dep", {
+    id,
+    actor,
+    depends_on: dependsOn,
+    type,
+  })
 }

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMemo, useState } from "react"
 
-import type { Issue, Status } from "@/api"
+import type { Issue, Status, UpdatePayload } from "@/api"
 import { IssueCard } from "@/components/issue-card"
 import { useActor } from "@/lib/actor"
 import { applyFilters, paramsToFilters } from "@/lib/filter"
@@ -26,6 +26,15 @@ interface Claim {
   to: Status
 }
 
+// A card being dragged dims. Otherwise it only shows the grab cursor when an
+// actor is set, since dragging is disabled without one.
+function cardClass(dragging: boolean, draggable: boolean): string {
+  if (dragging) {
+    return "opacity-50"
+  }
+  return draggable ? "cursor-grab" : ""
+}
+
 function Board() {
   const navigate = useNavigate()
   const search = Route.useSearch()
@@ -43,14 +52,15 @@ function Board() {
     [data, filters],
   )
 
-  const select = async (id: string) =>
-    navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  const select = async (id: string) => {
+    await navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  }
 
   const move = (issue: Issue, to: Status, assignee?: string) => {
     if (!actor || to === issue.status) {
       return
     }
-    const patch: { status: Status; assignee?: string } = { status: to }
+    const patch: UpdatePayload = { status: to }
     if (assignee !== undefined) {
       patch.assignee = assignee
     }
@@ -127,13 +137,7 @@ function Board() {
                   setDragId(null)
                   setOverCol(null)
                 }}
-                className={
-                  dragId === issue.id
-                    ? "opacity-50"
-                    : actor
-                      ? "cursor-grab"
-                      : ""
-                }
+                className={cardClass(dragId === issue.id, !!actor)}
               >
                 <IssueCard issue={issue} onSelect={select} />
               </div>

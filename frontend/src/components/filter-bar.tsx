@@ -10,6 +10,7 @@ import {
   EMPTY_FILTERS,
   type Filters,
   type GroupMode,
+  toGroupMode,
   uniqueSorted,
 } from "@/lib/filter"
 import { useIssues } from "@/queries"
@@ -55,13 +56,6 @@ function StatusChips({
     </div>
   )
 }
-
-// toGroupMode narrows a raw <select> value without asserting its type.
-function toGroupMode(v: string): GroupMode {
-  return GROUP_MODES.find((m) => m === v) ?? "none"
-}
-
-const GROUP_MODES: GroupMode[] = ["none", "epic", "label"]
 
 export function FilterBar({
   filters,
@@ -185,7 +179,7 @@ export function FilterBar({
             className={`${FIELD} ml-auto`}
             value={groupMode ?? "none"}
             onChange={(e) => {
-              onGroupMode(toGroupMode(e.target.value))
+              onGroupMode(toGroupMode(e.target.value) ?? "none")
             }}
           >
             <option value="none">group: none</option>

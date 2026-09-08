@@ -17,7 +17,12 @@ import {
   StatusBadge,
   StatusDot,
 } from "@/components/badges"
-import { allPrefixes, idPrefix, uniqueSorted } from "@/lib/filter"
+import {
+  allPrefixes,
+  idPrefix,
+  type TableSearch,
+  uniqueSorted,
+} from "@/lib/filter"
 import { prereqIds, suggestSequence } from "@/lib/sequence"
 import { useGraph, useIssues, useReady } from "@/queries"
 
@@ -52,7 +57,7 @@ function useFocus(): [string, (v: string) => void] {
 }
 
 function byUpdatedDesc(a: Issue, b: Issue): number {
-  return String(b.updated_at ?? "").localeCompare(String(a.updated_at ?? ""))
+  return (b.updated_at ?? "").localeCompare(a.updated_at ?? "")
 }
 
 function byPriority(a: Issue, b: Issue): number {
@@ -91,15 +96,15 @@ function Dashboard() {
   const prereqs = useMemo(() => prereqIds(sequence, edges), [sequence, edges])
 
   const counts = useMemo(() => {
-    const c: Record<Status, number> = {
+    const c = {
       open: 0,
       in_progress: 0,
       blocked: 0,
       deferred: 0,
       closed: 0,
-    }
+    } satisfies Record<Status, number>
     for (const i of all) {
-      c[i.status]++
+      c[i.status] += 1
     }
     return c
   }, [all])
@@ -112,7 +117,8 @@ function Dashboard() {
   const priBars = useMemo(() => {
     const c = [0, 0, 0, 0, 0]
     for (const i of openIssues) {
-      c[Math.min(Math.max(i.priority, 0), 4)]++
+      const p = Math.min(Math.max(i.priority, 0), 4)
+      c[p] = (c[p] ?? 0) + 1
     }
     const max = Math.max(1, ...c)
     return c.map((n, p) => ({ p, n, pct: Math.round((n / max) * 100) }))
@@ -122,16 +128,16 @@ function Dashboard() {
     () =>
       openIssues
         .filter((i) => i.priority <= 1)
-        .sort(byPriority)
+        .toSorted(byPriority)
         .slice(0, 8),
     [openIssues],
   )
   const recent = useMemo(
-    () => [...openIssues].sort(byUpdatedDesc).slice(0, 8),
+    () => openIssues.toSorted(byUpdatedDesc).slice(0, 8),
     [openIssues],
   )
   const readyTop = useMemo(
-    () => [...ready].sort(byPriority).slice(0, 8),
+    () => ready.toSorted(byPriority).slice(0, 8),
     [ready],
   )
 
@@ -144,7 +150,7 @@ function Dashboard() {
     }
     const max = Math.max(1, ...c.values())
     return [...c.entries()]
-      .sort((a, b) => b[1] - a[1])
+      .toSorted((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([label, n]) => ({ label, n, pct: Math.round((n / max) * 100) }))
   }, [openIssues])
@@ -167,10 +173,12 @@ function Dashboard() {
   )
   const prefixes = useMemo(() => allPrefixes(actionable), [actionable])
 
-  const open = async (id: string) =>
-    navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
-  const toTable = async (search: Record<string, unknown>) =>
-    navigate({ to: "/table", search })
+  const open = async (id: string) => {
+    await navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  }
+  const toTable = async (search: TableSearch) => {
+    await navigate({ to: "/table", search })
+  }
 
   if (isLoading) {
     return <p className="text-muted">loading…</p>
@@ -185,7 +193,9 @@ function Dashboard() {
         <StatCard
           label="Total"
           value={all.length}
-          onClick={async () => toTable({})}
+          onClick={async () => {
+            await toTable({})
+          }}
         />
         {STATUS_ORDER.map((s) => (
           <StatCard
@@ -193,7 +203,9 @@ function Dashboard() {
             label={s.replace("_", " ")}
             value={counts[s]}
             status={s}
-            onClick={async () => toTable({ st: s })}
+            onClick={async () => {
+              await toTable({ st: s })
+            }}
           />
         ))}
       </div>
@@ -248,7 +260,9 @@ function Dashboard() {
               <button
                 key={b.p}
                 type="button"
-                onClick={async () => toTable({ pri: b.p, st: "open" })}
+                onClick={async () => {
+                  await toTable({ pri: b.p, st: "open" })
+                }}
                 className="flex items-center gap-2 text-left"
               >
                 <span className="w-7 shrink-0">
@@ -275,9 +289,9 @@ function Dashboard() {
                 <button
                   key={l.label}
                   type="button"
-                  onClick={async () =>
-                    toTable({ lbl: l.label, group: "label" })
-                  }
+                  onClick={async () => {
+                    await toTable({ lbl: l.label, group: "label" })
+                  }}
                   className="flex items-center gap-2 text-left"
                 >
                   <span className="w-28 shrink-0 truncate">

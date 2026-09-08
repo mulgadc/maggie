@@ -12,7 +12,12 @@ import {
   type SimulationNodeDatum,
 } from "d3-force"
 import { select } from "d3-selection"
-import { zoom, type ZoomTransform, zoomIdentity } from "d3-zoom"
+import {
+  type D3ZoomEvent,
+  zoom,
+  type ZoomTransform,
+  zoomIdentity,
+} from "d3-zoom"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { Issue, Status } from "@/api"
@@ -20,19 +25,20 @@ import { labelHue } from "@/components/badges"
 import { applyFilters, paramsToFilters } from "@/lib/filter"
 import { useGraph, useIssues } from "@/queries"
 
-const STATUS_VAR: Record<Status, string> = {
+const STATUS_VAR = {
   open: "var(--color-st-open)",
   in_progress: "var(--color-st-in_progress)",
   blocked: "var(--color-st-blocked)",
   deferred: "var(--color-st-deferred)",
   closed: "var(--color-st-closed)",
-}
+} satisfies Record<Status, string>
 
 interface Node extends SimulationNodeDatum {
   id: string
   title: string
   status: Status
-  label?: string // primary label, drives cluster placement
+  // primary label, drives cluster placement
+  label?: string
 }
 
 interface Link extends SimulationLinkDatum<Node> {
@@ -63,7 +69,7 @@ function Graph() {
     [filtered],
   )
   const [pref, setPref] = useState<boolean | null>(null)
-  const clustered = pref === null ? hasLabels : pref
+  const clustered = pref ?? hasLabels
 
   // Default graph shows only beads that carry an edge. Cluster mode instead
   // shows every labelled bead grouped into its label's bubble, so beads that
@@ -71,9 +77,9 @@ function Graph() {
   // are restricted to beads that pass the active filters.
   const { nodes, links } = useMemo(() => {
     const byId = new Map<string, Issue>(filtered.map((i) => [i.id, i]))
-    let nodes: Node[]
+    let graphNodes: Node[]
     if (clustered) {
-      nodes = filtered
+      graphNodes = filtered
         .filter((i) => (i.labels ?? []).length > 0)
         .map((i) => ({
           id: i.id,
@@ -89,13 +95,13 @@ function Graph() {
           ids.add(e.to)
         }
       }
-      nodes = [...ids].map((id) => {
+      graphNodes = [...ids].map((id) => {
         const i = byId.get(id)
         return { id, title: i?.title ?? id, status: i?.status ?? "open" }
       })
     }
-    const present = new Set(nodes.map((n) => n.id))
-    const links: Link[] = (edges ?? [])
+    const present = new Set(graphNodes.map((n) => n.id))
+    const graphLinks: Link[] = (edges ?? [])
       .filter((e) => present.has(e.from) && present.has(e.to))
       .map((e) => ({
         key: `${e.from}->${e.to}`,
@@ -103,7 +109,7 @@ function Graph() {
         target: e.to,
         dashed: e.dashed,
       }))
-    return { nodes, links }
+    return { nodes: graphNodes, links: graphLinks }
   }, [filtered, edges, clustered])
 
   if (li || le) {
@@ -131,9 +137,9 @@ function Graph() {
       onToggleCluster={() => {
         setPref(!clustered)
       }}
-      onSelect={async (id) =>
-        navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
-      }
+      onSelect={async (id) => {
+        await navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+      }}
     />
   )
 }
@@ -171,7 +177,7 @@ function ForceGraph({
     () =>
       [
         ...new Set(nodes.map((n) => n.label).filter((l): l is string => !!l)),
-      ].sort(),
+      ].toSorted(),
     [nodes],
   )
   const centers = useMemo(() => {
@@ -179,27 +185,29 @@ function ForceGraph({
     const cx = size.w / 2
     const cy = size.h / 2
     const r = Math.min(size.w, size.h) * 0.34
-    clusterLabels.forEach((l, i) => {
+    for (const [i, l] of clusterLabels.entries()) {
       if (clusterLabels.length === 1) {
         m.set(l, { x: cx, y: cy })
-        return
+        continue
       }
       const a = (i / clusterLabels.length) * 2 * Math.PI - Math.PI / 2
       m.set(l, { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) })
-    })
+    }
     return m
   }, [clusterLabels, size.w, size.h])
 
   useEffect(() => {
     const el = svgRef.current
-    if (!el) {
-      return
-    }
     const ro = new ResizeObserver(([entry]) => {
+      if (!entry) {
+        return
+      }
       const { width, height } = entry.contentRect
       setSize({ w: width, h: height })
     })
-    ro.observe(el)
+    if (el) {
+      ro.observe(el)
+    }
     return () => {
       ro.disconnect()
     }
@@ -216,8 +224,10 @@ function ForceGraph({
       .force("charge", forceManyBody().strength(clustered ? -140 : -320))
       .force("collide", forceCollide(clustered ? 20 : 28))
     if (clustered) {
-      const at = (n: Node, k: "x" | "y") =>
-        centers.get(n.label ?? "")?.[k] ?? size[k === "x" ? "w" : "h"] / 2
+      const at = (n: Node, k: "x" | "y") => {
+        const c = centers.get(n.label ?? "")
+        return k === "x" ? (c?.x ?? size.w / 2) : (c?.y ?? size.h / 2)
+      }
       sim
         .force("x", forceX<Node>((n) => at(n, "x")).strength(0.25))
         .force("y", forceY<Node>((n) => at(n, "y")).strength(0.25))
@@ -235,17 +245,18 @@ function ForceGraph({
 
   useEffect(() => {
     const el = svgRef.current
-    if (!el) {
-      return
+    if (el) {
+      const z = zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.2, 4])
+        .on("zoom", (e: D3ZoomEvent<SVGSVGElement, unknown>) => {
+          setTf(e.transform)
+        })
+      select(el).call(z)
     }
-    const z = zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.2, 4])
-      .on("zoom", (e) => {
-        setTf(e.transform)
-      })
-    select(el).call(z)
     return () => {
-      select(el).on(".zoom", null)
+      if (el) {
+        select(el).on(".zoom", null)
+      }
     }
   }, [])
 
@@ -275,7 +286,7 @@ function ForceGraph({
   const bubbles: Bubble[] = clustered
     ? clusterLabels.map((label) => {
         const members = nodes.filter(
-          (n) => n.label === label && n.x != null && n.y != null,
+          (n) => n.label === label && n.x !== undefined && n.y !== undefined,
         )
         if (!members.length) {
           return { label, cx: 0, cy: 0, r: 0 }
@@ -334,7 +345,9 @@ function ForceGraph({
             )
           })}
           {links.map((l) => {
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- d3-force resolves endpoints to nodes
             const s = l.source as Node
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- d3-force resolves endpoints to nodes
             const t = l.target as Node
             return (
               <line

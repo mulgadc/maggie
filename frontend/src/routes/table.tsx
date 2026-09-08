@@ -39,10 +39,12 @@ function Table() {
     [mode, rows],
   )
 
-  const onSortChange = async (s: Sort) =>
-    navigate({ to: ".", search: (p) => ({ ...p, ...sortToParams(s) }) })
-  const select = async (id: string) =>
-    navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  const onSortChange = async (s: Sort) => {
+    await navigate({ to: ".", search: (p) => ({ ...p, ...sortToParams(s) }) })
+  }
+  const select = async (id: string) => {
+    await navigate({ to: ".", search: (s) => ({ ...s, issue: id }) })
+  }
 
   if (isLoading) {
     return <p className="text-muted">loading…</p>
