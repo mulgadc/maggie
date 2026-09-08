@@ -1,10 +1,13 @@
 /maggie
-/dist/
 *.log
 .DS_Store
 
 # Node
+frontend/dist/
 frontend/node_modules/
+frontend/.tanstack
+frontend/*.tsbuildinfo
+frontend/.pnpm-store
 
 # Docker — local snapshots (jsonl is a throwaway import, not source)
 snapshot/*.jsonl
