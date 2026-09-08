@@ -5,6 +5,8 @@ import (
 	"embed"
 	"encoding/json"
 	"errors"
+	"flag"
+	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -19,6 +21,10 @@ import (
 	"github.com/mulgadc/maggie/internal/beads"
 )
 
+// Version is set via ldflags at build time.
+// Example: go build -ldflags "-X main.Version=v1.0.0".
+var Version = "dev"
+
 //go:embed web
 var webFS embed.FS
 
@@ -32,6 +38,13 @@ var (
 )
 
 func main() {
+	showVersion := flag.Bool("version", false, "print the version and exit")
+	flag.Parse()
+	if *showVersion {
+		fmt.Println("maggie", Version)
+		return
+	}
+
 	addr := envOr("MAGGIE_ADDR", ":8088")
 	dir := envOr("MAGGIE_BEADS_DIR", ".")
 	bin := envOr("MAGGIE_BD_BIN", "bd")

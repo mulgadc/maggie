@@ -53,7 +53,7 @@ Maggie is a single Go binary that serves a web UI over [Beads](https://github.co
 ```bash
 git clone https://github.com/mulgadc/maggie.git
 cd maggie
-make all                            # build the frontend, embed it, build the binary
+make build
 MAGGIE_BEADS_DIR=/path/to/your/repo ./maggie
 ```
 

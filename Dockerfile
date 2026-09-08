@@ -10,6 +10,7 @@ ARG DOLT_VERSION=2.1.10
 
 # --- maggie binary (embeds the prebuilt SPA in cmd/maggie/web) ---
 FROM golang:${GO_VERSION}-bookworm AS maggie-build
+ARG MAGGIE_VERSION=dev
 WORKDIR /src
 COPY go.mod go.sum* ./
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -17,7 +18,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -o /out/maggie ./cmd/maggie
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.Version=${MAGGIE_VERSION}" -o /out/maggie ./cmd/maggie
 
 # --- bd CLI, pinned to the version the team runs (steveyegge/beads) ---
 FROM golang:${GO_VERSION}-bookworm AS bd-build

@@ -2,7 +2,11 @@ name: maggie
 
 services:
   dolt:
-    build: .
+    build:
+      context: .
+      args:
+        # Stamped into the binary and reported by `maggie -version`.
+        MAGGIE_VERSION: "${MAGGIE_VERSION:-dev}"
     image: maggie:local
     command: ["dolt"]
     volumes:
