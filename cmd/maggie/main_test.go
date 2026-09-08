@@ -543,6 +543,44 @@ func TestSPAHandlerCacheControl(t *testing.T) {
 	}
 }
 
+func TestSecurityHeaders(t *testing.T) {
+	h := securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	resp := get(t, srv.Client(), srv.URL+"/")
+	want := map[string]string{
+		"Content-Security-Policy": csp,
+		"Referrer-Policy":         "strict-origin-when-cross-origin",
+		"X-Content-Type-Options":  "nosniff",
+	}
+	for k, v := range want {
+		if got := resp.Header.Get(k); got != v {
+			t.Errorf("%s = %q, want %q", k, got, v)
+		}
+	}
+	if resp.Header.Get("Permissions-Policy") == "" {
+		t.Error("Permissions-Policy is not set")
+	}
+}
+
+// The SPA loads its display font from Google Fonts, so a policy that allowed
+// only 'self' would silently drop the header typeface.
+func TestCSPAllowsTheFontOriginsIndexNeeds(t *testing.T) {
+	for _, origin := range []string{"https://fonts.googleapis.com", "https://fonts.gstatic.com"} {
+		if !strings.Contains(csp, origin) {
+			t.Errorf("csp does not allow %s, which index.html loads", origin)
+		}
+	}
+	// Serving plain HTTP behind a TLS-terminating proxy: an upgrade directive
+	// would break a direct http:// deployment.
+	if strings.Contains(csp, "upgrade-insecure-requests") {
+		t.Error("csp upgrades to https, but maggie serves plain http")
+	}
+}
+
 func TestEnvOr(t *testing.T) {
 	t.Setenv("MAGGIE_TEST_ENV", "")
 	if got := envOr("MAGGIE_TEST_ENV", "fallback"); got != "fallback" {

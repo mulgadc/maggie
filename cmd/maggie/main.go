@@ -62,7 +62,11 @@ func main() {
 	}
 
 	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
-	srv := &http.Server{Addr: addr, Handler: routes(bd, actors, sub), ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           securityHeaders(routes(bd, actors, sub)),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -184,6 +188,29 @@ func routes(bd *beads.Client, actors []string, web fs.FS) *http.ServeMux {
 		}
 	})
 	return mux
+}
+
+// Content-Security-Policy header. Everything the SPA needs is same-origin
+// except the display font, which index.html pulls from Google Fonts. No HSTS or
+// upgrade-insecure-requests: maggie serves plain HTTP and expects a reverse
+// proxy to terminate TLS, so either would break a direct http:// deployment.
+const csp = "default-src 'self'; script-src 'self'; " +
+	"style-src 'self' https://fonts.googleapis.com; " +
+	"img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; " +
+	"connect-src 'self'; object-src 'none'; base-uri 'self'; " +
+	"form-action 'self'; frame-ancestors 'none';"
+
+// securityHeaders applies the response headers that bound what the page is
+// allowed to do. Bead text is rendered as markdown with raw HTML disabled, so
+// this is defence in depth rather than the only control.
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", csp)
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), browsing-topics=()")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // spaHandler serves embedded static assets, falling back to index.html for
