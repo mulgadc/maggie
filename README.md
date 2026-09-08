@@ -81,7 +81,7 @@ Browser ── HTTP ──▶ maggie ── exec ──▶ bd ──▶ .beads/ 
    SPA              Go binary          CLI
 ```
 
-- **`cmd/maggie`** — HTTP server. Serves the embedded SPA, falling back to `index.html` for client-side routes, and exposes the JSON API the SPA calls. `GET /health` is a liveness probe returning `{"status":"ok","version":...}`; it never shells out to `bd`.
+- **`cmd/maggie`** — HTTP server. Serves the embedded SPA, falling back to `index.html` for client-side routes, and exposes the JSON API the SPA calls. Text responses are gzipped, hashed assets are cached immutably, and security headers are set on every response. `GET /health` is a liveness probe returning `{"status":"ok","version":...}`; it never shells out to `bd`.
 - **`internal/beads`** — the `bd` wrapper. Builds the argv, applies a per-command timeout, and forwards `bd`'s JSON to the client untouched.
 
 Reads forward `bd`'s own JSON verbatim rather than remodelling it, so Maggie does not drift from the CLI as beads evolves.

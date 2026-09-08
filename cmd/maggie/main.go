@@ -67,7 +67,7 @@ func main() {
 	}
 
 	slog.Info("maggie listening", "addr", addr, "beads_dir", dir)
-	srv := httpServer(addr, securityHeaders(routes(bd, actors, sub)))
+	srv := httpServer(addr, handlerChain(routes(bd, actors, sub)))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -95,6 +95,13 @@ func setupLogging(w io.Writer, name string) error {
 // from it, so a bd call that runs long fails as a bd error rather than as a
 // truncated response.
 const bdTimeout = 15 * time.Second
+
+// handlerChain wraps the route table in the middleware every response passes
+// through. Compression sits inside the header middleware so the security
+// headers are set once, on the outermost writer.
+func handlerChain(h http.Handler) http.Handler {
+	return securityHeaders(compress(h))
+}
 
 // httpServer builds the listener's server with every timeout set. WriteTimeout
 // clears bdTimeout so a slow bd call still gets to answer; the rest bound how
