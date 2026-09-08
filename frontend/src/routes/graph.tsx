@@ -159,10 +159,14 @@ interface Pos {
 
 type PosMap = Map<string, Pos>
 
-const ORIGIN: Pos = { x: 0, y: 0 }
-
 function snapshot(nodes: Node[]): PosMap {
   return new Map(nodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]))
+}
+
+// posOf reads a node's drawn position, falling back to whatever the simulation
+// has already written for the ticks before the first snapshot lands.
+function posOf(pos: PosMap, n: Node): Pos {
+  return pos.get(n.id) ?? { x: n.x ?? 0, y: n.y ?? 0 }
 }
 
 function ForceGraph({
@@ -253,9 +257,6 @@ function ForceGraph({
     sim.on("tick", () => {
       setPos(snapshot(nodes))
     })
-    // forceSimulation seeds x/y synchronously, so publish them before the first
-    // tick lands and the graph never paints a frame stacked at the origin.
-    setPos(snapshot(nodes))
     simRef.current = sim
     return () => {
       sim.stop()
@@ -369,8 +370,8 @@ function ForceGraph({
             const s = l.source as Node
             // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- d3-force resolves endpoints to nodes
             const t = l.target as Node
-            const a = pos.get(s.id) ?? ORIGIN
-            const b = pos.get(t.id) ?? ORIGIN
+            const a = posOf(pos, s)
+            const b = posOf(pos, t)
             return (
               <line
                 key={l.key}
@@ -389,7 +390,7 @@ function ForceGraph({
           {nodes.map((n) => (
             <g
               key={n.id}
-              transform={`translate(${(pos.get(n.id) ?? ORIGIN).x},${(pos.get(n.id) ?? ORIGIN).y})`}
+              transform={`translate(${posOf(pos, n).x},${posOf(pos, n).y})`}
               className="cursor-pointer"
               onPointerDown={drag(n)}
               onClick={() => {
