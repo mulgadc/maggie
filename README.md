@@ -29,6 +29,8 @@
 
 Maggie is a single Go binary that serves a web UI over [Beads](https://github.com/steveyegge/beads), the `bd` issue tracker.
 
+We built it at [Mulga](https://mulgadc.com) to manage Spinifex, the control plane of our AWS-compatible stack for bare-metal, edge and on-premise deployments. Its beads span several repositories, and that got hard to read in a terminal. Nothing here is specific to our stack — it works on any repository with a `.beads/` directory.
+
 ## Why Maggie?
 
 `bd` is complete but text-only, and some questions are far easier to answer visually — what is blocked on what, which epic is stalling, where the work has piled up.
