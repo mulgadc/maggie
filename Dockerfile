@@ -43,6 +43,15 @@ RUN tar -xzf /tmp/dolt.tgz -C /tmp \
 
 # --- runtime ---
 FROM debian:bookworm-slim
+ARG MAGGIE_VERSION=dev
+# image.source is what makes GHCR attach the package to the repo, so it appears
+# under Packages there and inherits the repo's README and visibility settings.
+LABEL org.opencontainers.image.source="https://github.com/mulgadc/maggie" \
+      org.opencontainers.image.url="https://github.com/mulgadc/maggie" \
+      org.opencontainers.image.title="maggie" \
+      org.opencontainers.image.description="A fast web UI for Beads issue tracking." \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.version="${MAGGIE_VERSION}"
 # Cache mounts hold apt state outside the image, so the lists never land in the
 # final layer and stay slim without an explicit cleanup.
 RUN rm -f /etc/apt/apt.conf.d/docker-clean
