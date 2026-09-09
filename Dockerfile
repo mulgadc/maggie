@@ -5,10 +5,27 @@
 # image backs every compose service and lifts cleanly to another host.
 
 ARG GO_VERSION=1.27
+ARG NODE_VERSION=24.14.0
 ARG BD_VERSION=v1.2.2
 ARG DOLT_VERSION=2.1.10
 
-# --- maggie binary (embeds the prebuilt SPA in cmd/maggie/web) ---
+# --- frontend bundle ---
+# cmd/maggie/web is generated and not committed, so the image builds it rather
+# than depending on one a local `make build-ui` happened to leave behind.
+FROM node:${NODE_VERSION}-bookworm-slim AS ui-build
+WORKDIR /src/frontend
+RUN corepack enable
+# Dependencies first: the lockfile changes far less often than the sources, so
+# this layer survives most rebuilds.
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/pnpm-store \
+    pnpm config set store-dir /pnpm-store \
+ && pnpm install --frozen-lockfile
+COPY frontend/ ./
+# vite writes to ../cmd/maggie/web, so the bundle lands at /src/cmd/maggie/web.
+RUN pnpm build
+
+# --- maggie binary (go:embeds the bundle built above) ---
 FROM golang:${GO_VERSION}-bookworm AS maggie-build
 ARG MAGGIE_VERSION=dev
 WORKDIR /src
@@ -16,6 +33,7 @@ COPY go.mod go.sum* ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 COPY . .
+COPY --from=ui-build /src/cmd/maggie/web ./cmd/maggie/web
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.Version=${MAGGIE_VERSION}" -o /out/maggie ./cmd/maggie
