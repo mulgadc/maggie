@@ -28,7 +28,7 @@ COPY frontend/ ./
 RUN pnpm build
 
 # --- maggie binary (go:embeds the bundle built above) ---
-FROM golang:1.27.3-bookworm@sha256:5c3e9b43cfd3bb95c7937462e29d87ada57b481a96fa23ad0eb61778d7a00110 AS maggie-build
+FROM golang:1.27.3-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS maggie-build
 ARG MAGGIE_VERSION=dev
 WORKDIR /src
 COPY go.mod go.sum* ./
@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # --- bd release binary, pinned to the version the team runs (steveyegge/beads) ---
 # Compiling bd from source with CGO cost about three minutes of every build.
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS bd-fetch
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS bd-fetch
 ARG BD_VERSION
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/beads_${BD_VERSION#v}_linux_amd64.tar.gz /tmp/
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/checksums.txt /tmp/
@@ -52,14 +52,14 @@ RUN cd /tmp \
  && cp bd /usr/local/bin/bd
 
 # --- dolt release binary ---
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587 AS dolt-fetch
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS dolt-fetch
 ARG DOLT_VERSION
 ADD https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-amd64.tar.gz /tmp/dolt.tgz
 RUN tar -xzf /tmp/dolt.tgz -C /tmp \
  && cp /tmp/dolt-linux-amd64/bin/dolt /usr/local/bin/dolt
 
 # --- runtime ---
-FROM debian:bookworm-slim@sha256:7c7b2c966bc9ee8cedfeef67e0e279108992c77681fa595db4a9d65c06ccc587
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
 ARG MAGGIE_VERSION=dev
 # image.source is what makes GHCR attach the package to the repo, so it appears
 # under Packages there and inherits the repo's README and visibility settings.
