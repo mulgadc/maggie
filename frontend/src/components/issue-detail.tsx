@@ -281,6 +281,7 @@ export function IssueDetail({
               {issue.closed_at ? (
                 <Meta label="Closed" value={fmt(issue.closed_at)} />
               ) : null}
+              <Meta label="External ref" value={issue.external_ref} />
             </dl>
 
             <LabelEditor issue={issue} actor={actor} issues={issues} />

@@ -33,6 +33,7 @@ export interface Issue {
   updated_at?: string
   closed_at?: string
   close_reason?: string
+  external_ref?: string
   dependency_count?: number
   dependent_count?: number
   comment_count?: number
