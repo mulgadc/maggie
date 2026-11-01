@@ -14,7 +14,7 @@ ARG DOLT_VERSION=2.1.10
 # --- frontend bundle ---
 # cmd/maggie/web is generated and not committed, so the image builds it rather
 # than depending on one a local `make build-ui` happened to leave behind.
-FROM node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS ui-build
+FROM node:24.22.1-bookworm-slim@sha256:be8204d4bd327363357f532187b752ff62759c31bedf98e9e18fc08c9cbd605c AS ui-build
 WORKDIR /src/frontend
 RUN corepack enable
 # Dependencies first: the lockfile changes far less often than the sources, so
@@ -28,7 +28,7 @@ COPY frontend/ ./
 RUN pnpm build
 
 # --- maggie binary (go:embeds the bundle built above) ---
-FROM golang:1.27.3-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS maggie-build
+FROM golang:1.27.3-bookworm@sha256:d9b6a1beb9474adc2a1ce842573639b44b2a0dd49b6669f51d3821baf9ec37c9 AS maggie-build
 ARG MAGGIE_VERSION=dev
 WORKDIR /src
 COPY go.mod go.sum* ./
@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # --- bd release binary, pinned to the version the team runs (steveyegge/beads) ---
 # Compiling bd from source with CGO cost about three minutes of every build.
-FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS bd-fetch
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS bd-fetch
 ARG BD_VERSION
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/beads_${BD_VERSION#v}_linux_amd64.tar.gz /tmp/
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/checksums.txt /tmp/
@@ -52,14 +52,14 @@ RUN cd /tmp \
  && cp bd /usr/local/bin/bd
 
 # --- dolt release binary ---
-FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS dolt-fetch
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS dolt-fetch
 ARG DOLT_VERSION
 ADD https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-amd64.tar.gz /tmp/dolt.tgz
 RUN tar -xzf /tmp/dolt.tgz -C /tmp \
  && cp /tmp/dolt-linux-amd64/bin/dolt /usr/local/bin/dolt
 
 # --- runtime ---
-FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
+FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
 ARG MAGGIE_VERSION=dev
 # image.source is what makes GHCR attach the package to the repo, so it appears
 # under Packages there and inherits the repo's README and visibility settings.
