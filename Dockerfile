@@ -19,7 +19,7 @@ WORKDIR /src/frontend
 RUN corepack enable
 # Dependencies first: the lockfile changes far less often than the sources, so
 # this layer survives most rebuilds.
-COPY frontend/package.json frontend/pnpm-lock.yaml ./
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
 RUN --mount=type=cache,target=/pnpm-store \
     pnpm config set store-dir /pnpm-store \
  && pnpm install --frozen-lockfile
