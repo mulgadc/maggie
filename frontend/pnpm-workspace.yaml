@@ -12,3 +12,6 @@ trustPolicyExclude:
 minimumReleaseAgeExclude:
   - baseline-browser-mapping@2.11.35
   - electron-to-chromium@1.5.477
+# eslint 10 pins minimatch ^10, which has no fix for GHSA-g3hv-75wg-m249.
+overrides:
+  minimatch: ^11.0.1
