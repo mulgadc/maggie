@@ -7,3 +7,8 @@ trustPolicy: no-downgrade
 # so the backport reads as a downgrade. Dev-only, reached via @babel/core.
 trustPolicyExclude:
   - semver@6.3.1
+# browserslist pulls these data packages, which publish every few days, so a
+# browserslist bump nearly always lands a version inside the release-age window.
+minimumReleaseAgeExclude:
+  - baseline-browser-mapping@2.11.35
+  - electron-to-chromium@1.5.477
