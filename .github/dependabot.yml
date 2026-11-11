@@ -55,7 +55,7 @@ updates:
       timezone: Australia/Sydney
     cooldown:
       default-days: 3
-    # Go 1.27.3 and Node 24.22.1 are deliberate; only their digests should move.
+    # Go 1.27.4 and Node 24.22.1 are deliberate; only their digests should move.
     ignore:
       - dependency-name: golang
         update-types:
