@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # --- bd release binary, pinned to the version the team runs (steveyegge/beads) ---
 # Compiling bd from source with CGO cost about three minutes of every build.
-FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS bd-fetch
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS bd-fetch
 ARG BD_VERSION
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/beads_${BD_VERSION#v}_linux_amd64.tar.gz /tmp/
 ADD https://github.com/steveyegge/beads/releases/download/${BD_VERSION}/checksums.txt /tmp/
@@ -52,14 +52,14 @@ RUN cd /tmp \
  && cp bd /usr/local/bin/bd
 
 # --- dolt release binary ---
-FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3 AS dolt-fetch
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS dolt-fetch
 ARG DOLT_VERSION
 ADD https://github.com/dolthub/dolt/releases/download/v${DOLT_VERSION}/dolt-linux-amd64.tar.gz /tmp/dolt.tgz
 RUN tar -xzf /tmp/dolt.tgz -C /tmp \
  && cp /tmp/dolt-linux-amd64/bin/dolt /usr/local/bin/dolt
 
 # --- runtime ---
-FROM debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 ARG MAGGIE_VERSION=dev
 # image.source is what makes GHCR attach the package to the repo, so it appears
 # under Packages there and inherits the repo's README and visibility settings.
